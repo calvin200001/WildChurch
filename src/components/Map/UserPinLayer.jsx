@@ -140,8 +140,9 @@ export function UserPinLayer() {
             creator: pin.profiles?.first_name || 'Anonymous',
             tags: JSON.stringify(pin.pin_tags?.map(t => t.tag) || [])
           }
-        };
-      }).filter(Boolean); // Remove null entries
+        }
+      }
+).filter(Boolean)
     };
 
     console.log('GeoJSON created:', geojson);
