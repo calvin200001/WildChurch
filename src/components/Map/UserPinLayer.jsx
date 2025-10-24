@@ -88,31 +88,33 @@ export function UserPinLayer() {
     map.on('click', 'resources', (e) => handlePinClick(e, map));
   }, [map]);
 
-  useEffect(() => {
+  const onMapLoad = useCallback(() => {
     if (!map) return;
 
-    const onMapLoad = () => {
-      const icons = [
-        { name: 'campfire-icon', url: '/campfire-icon.svg' },
-        { name: 'gathering-icon', url: '/gathering-icon.svg' },
-        { name: 'quiet-icon', url: '/quiet-icon.svg' },
-        { name: 'resource-icon', url: '/resource-icon.svg' },
-      ];
+    const icons = [
+      { name: 'campfire-icon', url: '/campfire-icon.svg' },
+      { name: 'gathering-icon', url: '/gathering-icon.svg' },
+      { name: 'quiet-icon', url: '/quiet-icon.svg' },
+      { name: 'resource-icon', url: '/resource-icon.svg' },
+    ];
 
-      let loadedIconCount = 0;
-      icons.forEach(icon => {
-        map.loadImage(icon.url, (error, image) => {
-          if (error) { console.error('Error loading image:', error); return; };
-          if (!map.hasImage(icon.name)) {
-            map.addImage(icon.name, image, { sdf: true });
-          }
-          loadedIconCount++;
-          if (loadedIconCount === icons.length) {
-            loadPins();
-          }
-        });
+    let loadedIconCount = 0;
+    icons.forEach(icon => {
+      map.loadImage(icon.url, (error, image) => {
+        if (error) { console.error('Error loading image:', error); return; };
+        if (!map.hasImage(icon.name)) {
+          map.addImage(icon.name, image, { sdf: true });
+        }
+        loadedIconCount++;
+        if (loadedIconCount === icons.length) {
+          loadPins();
+        }
       });
-    };
+    });
+  }, [map, loadPins]); // Dependencies for useCallback
+
+  useEffect(() => {
+    if (!map) return;
 
     if (map.isStyleLoaded()) {
       onMapLoad();
@@ -146,7 +148,7 @@ export function UserPinLayer() {
       map.off('webglcontextlost', handleContextLost);
       map.off('webglcontextrestored', handleContextRestored);
     };
-  }, [map, onMapLoad, loadPins]);
+  }, [map, onMapLoad, loadPins]); // Dependencies for useEffect
 
   return null;
 }
