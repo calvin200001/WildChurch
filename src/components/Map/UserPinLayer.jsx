@@ -87,8 +87,144 @@ export function UserPinLayer() {
     }
 
     if (!pins || pins.length === 0) {
-      console.warn('No pins found in database');
-      return;
+      console.warn('No pins found in database. Initializing with empty source.');
+      map.addSource('user-pins', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [] // Provide an empty features array
+        },
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50
+      });
+
+      // Add cluster layers
+      map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'user-pins',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#4a7c4a', // forest-500
+            10,
+            '#d97706', // sunset-500
+            30,
+            '#b45309'  // sunset-600
+          ],
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            20,
+            10,
+            30,
+            30,
+            40
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#f8f6f3'
+        }
+      });
+
+      map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'user-pins',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 14
+        },
+        paint: {
+          'text-color': '#f8f6f3'
+        }
+      });
+
+      // Add individual pin layers
+      map.addLayer({
+        id: 'open-camps',
+        type: 'symbol',
+        source: 'user-pins',
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']],
+        layout: {
+          'icon-image': 'campfire-icon',
+          'icon-size': 1.5,
+          'icon-allow-overlap': true,
+          'text-field': ['get', 'title'],
+          'text-offset': [0, 1.5],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': '#2d5016',
+          'text-halo-color': '#fff',
+          'text-halo-width': 1
+        }
+      });
+
+      map.addLayer({
+        id: 'gatherings',
+        type: 'symbol',
+        source: 'user-pins',
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']],
+        layout: {
+          'icon-image': 'gathering-icon',
+          'icon-size': 1.5,
+          'icon-allow-overlap': true,
+          'text-field': ['get', 'title'],
+          'text-offset': [0, 1.5],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': '#6b2d5c',
+          'text-halo-color': '#fff',
+          'text-halo-width': 1
+        }
+      });
+
+      map.addLayer({
+        id: 'quiet-places',
+        type: 'symbol',
+        source: 'user-pins',
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']],
+        layout: {
+          'icon-image': 'quiet-icon',
+          'icon-size': 1.5,
+          'icon-allow-overlap': true,
+          'text-field': ['get', 'title'],
+          'text-offset': [0, 1.5],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': '#4a5568',
+          'text-halo-color': '#fff',
+          'text-halo-width': 1
+        }
+      });
+
+      map.addLayer({
+        id: 'resources',
+        type: 'symbol',
+        source: 'user-pins',
+        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']],
+        layout: {
+          'icon-image': 'resource-icon',
+          'icon-size': 1.5,
+          'icon-allow-overlap': true,
+          'text-field': ['get', 'title'],
+          'text-offset': [0, 1.5],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': '#0000FF',
+          'text-halo-color': '#fff',
+          'text-halo-width': 1
+        }
+      });
+      return; // Now it's safe to exit.
     }
 
     // Convert to GeoJSON
