@@ -12,20 +12,49 @@ function handlePinClick(e, map) {
     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
   }
   
-  new maplibregl.Popup()
+  const typeEmoji = {
+    'open_camp': '🏕️',
+    'gathering': '🙏',
+    'quiet_place': '🌲',
+    'resource': '📍'
+  };
+  
+  new maplibregl.Popup({
+    maxWidth: '320px',
+    className: 'custom-popup'
+  })
     .setLngLat(coordinates)
     .setHTML(`
-      <div class="pin-popup p-2 rounded-lg shadow-md bg-white max-w-xs">
-        <h3 class="text-lg font-bold text-gray-800">${title}</h3>
-        <span class="text-sm text-gray-600 capitalize">${type.replace('_', ' ')}</span>
-        <p class="text-gray-700 mt-2">${description || ''}</p>
-        <p class="text-xs text-gray-500 mt-2">Posted by ${creator}</p>
+      <div class="bg-earth-800 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xl font-display font-bold text-earth-50">
+            ${typeEmoji[type] || ''} ${title}
+          </h3>
+        </div>
+        <span class="inline-block px-3 py-1 bg-forest-800 text-forest-200 text-xs font-medium rounded-full mb-3">
+          ${type.replace('_', ' ')}
+        </span>
+        <p class="text-earth-200 mb-3 text-sm leading-relaxed">
+          ${description || 'No description provided.'}
+        </p>
+        <p class="text-xs text-earth-400 mb-3">
+          📝 Posted by <span class="text-earth-300 font-medium">${creator || 'Anonymous'}</span>
+        </p>
         ${tags && JSON.parse(tags).length > 0 ? `
-          <div class="tags mt-2">
-            ${JSON.parse(tags).map(tag => `<span class="tag bg-gray-200 text-gray-700 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${tag.replace('_',' ')}</span>`).join('')}
+          <div class="flex flex-wrap gap-2 mb-4">
+            ${JSON.parse(tags).map(tag => 
+              `<span class="px-2 py-1 bg-earth-700 text-earth-300 text-xs rounded-full">
+                ${tag.replace('_',' ')}
+              </span>`
+            ).join('')}
           </div>
         ` : ''}
-        <button class="mt-2 w-full bg-blue-500 text-white rounded-md p-1" onclick="window.viewPinDetails('${id}')">View Details</button>
+        <button 
+          class="w-full bg-forest-700 hover:bg-forest-600 text-earth-50 font-semibold py-2 px-4 rounded-lg transition-colors"
+          onclick="window.viewPinDetails('${id}')"
+        >
+          View Full Details →
+        </button>
       </div>
     `)
     .addTo(map);
@@ -75,17 +104,125 @@ export function UserPinLayer() {
     }
 
     map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
-    map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 10, '#f1f075', 30, '#f28cb1'], 'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 30, 40] } });
-    map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 'text-size': 12 } });
+    map.addLayer({ 
+      id: 'clusters', 
+      type: 'circle', 
+      source: 'user-pins', 
+      filter: ['has', 'point_count'], 
+      paint: { 
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          '#4a7c4a', // forest-500 (1-9 pins)
+          10,
+          '#d97706',  // sunset-500 (10-29 pins)
+          30,
+          '#b45309'   // sunset-600 (30+ pins)
+        ],
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          20,  // 1-9 pins
+          10,
+          30,  // 10-29 pins
+          30,
+          40   // 30+ pins
+        ],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#f8f6f3' // earth-50
+      } 
+    });
+    map.addLayer({ 
+      id: 'cluster-count', 
+      type: 'symbol', 
+      source: 'user-pins', 
+      filter: ['has', 'point_count'], 
+      layout: { 
+        'text-field': '{point_count_abbreviated}', 
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 
+        'text-size': 14
+      },
+      paint: {
+        'text-color': '#f8f6f3' // earth-50
+      }
+    });
     map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#2d5016', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
     map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#6b2d5c', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
     map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#4a5568', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
     map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#0000FF', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
 
-    map.on('click', 'open-camps', (e) => handlePinClick(e, map));
-    map.on('click', 'gatherings', (e) => handlePinClick(e, map));
-    map.on('click', 'quiet-places', (e) => handlePinClick(e, map));
-    map.on('click', 'resources', (e) => handlePinClick(e, map));
+    map.on('click', 'open-camps', (e) => {
+      e.preventDefault(); // Prevent map click event
+      handlePinClick(e, map);
+    });
+    map.on('click', 'gatherings', (e) => {
+      e.preventDefault();
+      handlePinClick(e, map);
+    });
+    map.on('click', 'quiet-places', (e) => {
+      e.preventDefault();
+      handlePinClick(e, map);
+    });
+    map.on('click', 'resources', (e) => {
+      e.preventDefault();
+      handlePinClick(e, map);
+    });
+
+    // After adding all layers, add cursor handling:
+    map.on('mouseenter', 'open-camps', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'open-camps', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    map.on('mouseenter', 'gatherings', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'gatherings', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    map.on('mouseenter', 'quiet-places', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'quiet-places', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    map.on('mouseenter', 'resources', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'resources', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    map.on('mouseenter', 'clusters', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'clusters', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    // After adding click handlers for pins, add this:
+    map.on('click', 'clusters', (e) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['clusters']
+      });
+      
+      const clusterId = features[0].properties.cluster_id;
+      const source = map.getSource('user-pins');
+      
+      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if (err) return;
+        
+        map.easeTo({
+          center: features[0].geometry.coordinates,
+          zoom: zoom + 0.5
+        });
+      });
+    });
+
   }, [map]);
 
   const onMapLoad = useCallback(() => {

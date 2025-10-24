@@ -9,42 +9,36 @@ import { GatheringsBoard } from './components/GatheringsBoard';
 import AuthModal from './components/Auth/AuthModal';
 import Seo from './components/Seo';
 import { supabase } from './lib/supabase';
+import { Header } from './components/Header';
+import { MapEmptyState } from './components/MapEmptyState';
+import { MapControls } from './components/Map/MapControls';
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
 function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Accept user and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
-  // const [user, setUser] = useState(null); // State moved to App component
-  // const [showAuthModal, setShowAuthModal] = useState(false); // State moved to App component
   const location = useLocation(); // Get current location for canonical URL
 
   console.log('User:', user); // Debugging: Check user state
   console.log('showDropPinModal:', showDropPinModal); // Debugging: Check modal visibility state
 
-  // useEffect for auth state changes moved to App component
-  // useEffect(() => {
-  //   // Set initial user session
-  //   supabase.auth.getSession().then(({ data: { session } }) => {
-  //     setUser(session?.user || null);
-  //   });
-
-  //   // Listen for auth state changes
-  //   const { data: authListener } = supabase.auth.onAuthStateChange(
-  //     (event, session) => {
-  //       setUser(session?.user || null);
-  //     }
-  //   );
-
-  //   return () => {
-  //     authListener.subscription.unsubscribe();
-  //   };
-  // }, []);
-
   const handleMapClick = (e) => {
-    console.log('Map clicked', e); // Debugging: Check if map click fires
-    // Prevent modal from opening when clicking a pin/layer
-    if (e.defaultPrevented) return;
+    console.log('Map clicked', e);
+    
+    // IMPORTANT: Check if we clicked on a map layer/feature
+    const features = e.target.queryRenderedFeatures(e.point, {
+      layers: ['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters']
+    });
+    
+    if (features.length > 0) {
+      // Clicked on an existing pin/cluster, don't open modal
+      console.log('Clicked on feature, not opening modal');
+      return;
+    }
+    
+    // Clicked on empty map - open modal
+    console.log('Opening drop pin modal');
     setPinLocation(e.lngLat);
     setShowDropPinModal(true);
   };
@@ -65,13 +59,18 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
   };
 
   return (
-    <div className="relative w-screen h-screen">
+    <div className="relative w-screen h-screen pt-16"> {/* Added pt-16 for header */}
       <Seo
         title="WildChurch - Church in the wild, wherever you are"
         description="Connect with dispersed Christian communities through crowdsourced mapping, real-time gatherings, and authentic fellowship."
         name="WildChurch"
         type="website"
         canonicalUrl={`${baseUrl}${location.pathname}`}
+      />
+      <Header 
+        user={user}
+        onLogout={handleLogout}
+        onShowAuth={() => setShowAuthModal(true)}
       />
       <Map
         mapLib={maplibregl}
@@ -85,8 +84,10 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
         style={{ width: '100%', height: '100%' }}
         mapStyle={MAP_CONFIG.style}
         onClick={handleMapClick}
+        interactiveLayerIds={['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters']} // IMPORTANT: Tell react-map-gl which layers are clickable
       >
         <UserPinLayer />
+        <MapControls /> {/* Add this */}
       </Map>
       {showDropPinModal && (
         <DropPinModal
@@ -100,29 +101,7 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
             }}
         />
       )}
-      <div className="absolute top-4 left-4 bg-white p-2 rounded-md shadow-md z-10 flex items-center space-x-4">
-        <Link to="/proposals" className="text-blue-600 hover:underline">View Proposals</Link>
-        {user ? (
-          <>
-            <span className="text-gray-700">Hello, {user.email}</span>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline text-sm"
-            >
-              Log Out
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline text-sm"
-            >
-              Sign Up / Log In
-            </button>
-          </>
-        )}
-      </div>
+      {!user && <MapEmptyState />}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );

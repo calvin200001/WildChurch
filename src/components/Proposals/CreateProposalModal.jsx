@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { MapPin } from 'lucide-react';
 
 export function CreateProposalModal({ onClose, onSuccess, user, location }) { // Accept location prop
   const [formData, setFormData] = useState({
@@ -7,7 +8,7 @@ export function CreateProposalModal({ onClose, onSuccess, user, location }) { //
     description: '',
     proposedStartTime: '',
     proposedEndTime: '',
-    proposedLocation: location, // Initialize with passed location
+    proposedLocation: location || { lng: 0, lat: 0 }, // Use passed location
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -99,6 +100,18 @@ export function CreateProposalModal({ onClose, onSuccess, user, location }) { //
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           />
         </label>
+
+        <div className="bg-earth-700/50 border border-earth-600 rounded-lg p-3">
+          <div className="flex items-center space-x-2 text-sm text-earth-300">
+            <MapPin className="h-4 w-4 text-forest-400" />
+            <span>
+              {formData.proposedLocation.lat === 0 && formData.proposedLocation.lng === 0 
+                ? 'No location selected (click map to set)'
+                : `Location: ${formData.proposedLocation.lat.toFixed(4)}, ${formData.proposedLocation.lng.toFixed(4)}`
+              }
+            </span>
+          </div>
+        </div>
 
         <label className="block">
           <span className="text-gray-700">Proposed Start Time:</span>

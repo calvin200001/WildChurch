@@ -1,3 +1,102 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-earth-900 text-earth-100 antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-earth-50;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply bg-forest-700 hover:bg-forest-600 text-earth-50 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-stone-600 hover:bg-stone-500 text-earth-50 font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-danger {
+    @apply bg-red-800 hover:bg-red-700 text-earth-50 font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  /* Cards */
+  .card {
+    @apply bg-earth-800 border border-earth-700 rounded-xl shadow-lg p-6;
+  }
+  
+  /* Inputs */
+  .input {
+    @apply bg-earth-800 border border-earth-600 rounded-lg py-2 px-3 text-earth-100 placeholder-earth-400 focus:outline-none focus:border-forest-600 focus:ring-2 focus:ring-forest-700 focus:ring-opacity-50 transition-colors;
+  }
+  
+  .textarea {
+    @apply input resize-none;
+  }
+  
+  /* Modals */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex justify-center items-center z-50 p-4;
+  }
+  
+  .modal-content {
+    @apply bg-earth-800 border border-earth-700 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto;
+  }
+  
+  /* Pin Popup Styles */
+  .maplibregl-popup-content {
+    @apply bg-earth-800 border border-earth-700 rounded-lg shadow-2xl !important;
+  }
+  
+  .maplibregl-popup-close-button {
+    @apply text-earth-100 hover:text-forest-500 text-2xl font-bold !important;
+  }
+  
+  /* Tags */
+  .tag {
+    @apply inline-block bg-forest-800 text-forest-100 px-3 py-1 rounded-full text-xs font-medium mr-2 mb-2;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2a2621;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #5d5344;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7d6f5c;
+}
+
+/* Map Attribution */
+.maplibregl-ctrl-attrib {
+  @apply bg-earth-900/90 backdrop-blur-sm text-earth-400 text-xs !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  @apply text-forest-400 hover:text-forest-300 !important;
+}
+
+.maplibregl-ctrl-bottom-right {
+  @apply opacity-75 hover:opacity-100 transition-opacity !important;
+}
+
+@media (max-width: 640px) {
+  .modal-content {
+    max-height: calc(100vh - 4rem);
+  }
+}
