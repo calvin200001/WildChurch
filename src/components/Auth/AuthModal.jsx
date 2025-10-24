@@ -126,10 +126,10 @@ const AuthModal = ({ isOpen, onClose }) => {
                   },
                 });
                 if (error) throw error;
+                // No setLoading(false) here, as the page will redirect
               } catch (err) {
                 setError(err.message);
-              } finally {
-                setLoading(false);
+                setLoading(false); // Only set loading to false if an error occurs before redirect
               }
             }}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center"
