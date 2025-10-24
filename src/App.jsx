@@ -20,6 +20,7 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
   const location = useLocation(); // Get current location for canonical URL
 
   console.log('User:', user); // Debugging: Check user state
+  console.log('showDropPinModal:', showDropPinModal); // Debugging: Check modal visibility state
 
   // useEffect for auth state changes moved to App component
   // useEffect(() => {
