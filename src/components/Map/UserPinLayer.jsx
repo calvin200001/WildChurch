@@ -62,22 +62,30 @@ export function UserPinLayer() {
       }))
     };
 
-    if (!map.getSource('user-pins')) {
-      map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
-      map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 10, '#f1f075', 30, '#f28cb1'], 'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 30, 40] } });
-      map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 'text-size': 12 } });
-      map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#2d5016', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
-      map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#6b2d5c', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
-      map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#4a5568', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
-      map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#0000FF', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
-
-      map.on('click', 'open-camps', (e) => handlePinClick(e, map));
-      map.on('click', 'gatherings', (e) => handlePinClick(e, map));
-      map.on('click', 'quiet-places', (e) => handlePinClick(e, map));
-      map.on('click', 'resources', (e) => handlePinClick(e, map));
-    } else {
-      map.getSource('user-pins').setData(geojson);
+    // Remove existing sources and layers if they exist, to prevent errors on context restore
+    if (map.getSource('user-pins')) {
+      // Remove layers associated with 'user-pins' source
+      if (map.getLayer('resources')) map.removeLayer('resources');
+      if (map.getLayer('quiet-places')) map.removeLayer('quiet-places');
+      if (map.getLayer('gatherings')) map.removeLayer('gatherings');
+      if (map.getLayer('open-camps')) map.removeLayer('open-camps');
+      if (map.getLayer('cluster-count')) map.removeLayer('cluster-count');
+      if (map.getLayer('clusters')) map.removeLayer('clusters');
+      map.removeSource('user-pins');
     }
+
+    map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
+    map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': ['step', ['get', 'point_count'], '#51bbd6', 10, '#f1f075', 30, '#f28cb1'], 'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 30, 40] } });
+    map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 'text-size': 12 } });
+    map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#2d5016', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
+    map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#6b2d5c', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
+    map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#4a5568', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
+    map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#0000FF', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
+
+    map.on('click', 'open-camps', (e) => handlePinClick(e, map));
+    map.on('click', 'gatherings', (e) => handlePinClick(e, map));
+    map.on('click', 'quiet-places', (e) => handlePinClick(e, map));
+    map.on('click', 'resources', (e) => handlePinClick(e, map));
   }, [map]);
 
   useEffect(() => {
@@ -117,11 +125,28 @@ export function UserPinLayer() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, () => loadPins())
       .subscribe();
 
+    // WebGL context loss handling
+    const handleContextLost = (e) => {
+      e.preventDefault();
+      console.warn('WebGL context lost. Attempting to restore...');
+    };
+
+    const handleContextRestored = () => {
+      console.log('WebGL context restored. Re-initializing map layers.');
+      // Re-run the map load logic to re-add sources and layers
+      onMapLoad();
+    };
+
+    map.on('webglcontextlost', handleContextLost);
+    map.on('webglcontextrestored', handleContextRestored);
+
     return () => {
       subscription.unsubscribe();
       map.off('load', onMapLoad);
+      map.off('webglcontextlost', handleContextLost);
+      map.off('webglcontextrestored', handleContextRestored);
     };
-  }, [map, loadPins]);
+  }, [map, onMapLoad, loadPins]);
 
   return null;
 }
