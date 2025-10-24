@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export function CreateProposalModal({ onClose, onSuccess, user }) {
+export function CreateProposalModal({ onClose, onSuccess, user, location }) { // Accept location prop
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     proposedStartTime: '',
     proposedEndTime: '',
-    proposedLocation: null, // This will be set by a map click or similar
+    proposedLocation: location, // Initialize with passed location
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,10 +33,9 @@ export function CreateProposalModal({ onClose, onSuccess, user }) {
     setError(null);
 
     try {
-      // For simplicity, we'll assume a default location for now, or you can integrate a map picker
-      // For a real app, you'd likely have a map interaction to set proposedLocation
+      // The proposedLocation is now initialized from the prop
       if (!formData.proposedLocation) {
-        setError("Please select a proposed location on the map.");
+        setError("Proposed location is missing. Please ensure a location is provided.");
         setLoading(false);
         return;
       }
@@ -122,11 +121,7 @@ export function CreateProposalModal({ onClose, onSuccess, user }) {
           />
         </label>
 
-        {/* TODO: Integrate a map picker for proposedLocation */}
-        <p className="text-sm text-gray-500">
-          Note: For now, the proposed location needs to be manually set or integrated with a map interaction.
-          A placeholder location will be used if not set.
-        </p>
+        
 
         <div className="button-group flex justify-end space-x-2">
           <button

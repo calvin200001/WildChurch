@@ -1,3 +1,15 @@
+import React, { useState, useEffect } from 'react';
+import Map from 'react-map-gl';
+import maplibregl from 'maplibre-gl';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { MAP_CONFIG } from './lib/mapConfig';
+import { UserPinLayer } from './components/Map/UserPinLayer';
+import { DropPinModal } from './components/Map/DropPinModal';
+import { GatheringsBoard } from './components/GatheringsBoard';
+import AuthModal from './components/Auth/AuthModal';
+import Seo from './components/Seo';
+import { supabase } from './lib/supabase';
+
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
 function AppContent() {

@@ -198,10 +198,10 @@ export function GatheringsBoard({ user }) { // Accept user prop
               </p>
               <button
                 onClick={() => handleCommit(proposal.id)}
-                disabled={!user || proposal.commitments.some(c => c.user.id === user?.id)}
+                disabled={!user || proposal.commitments.some(c => c.user_id === user?.id)}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {proposal.commitments.some(c => c.user.id === user?.id) ? 'Committed!' : 'Commit to Join'}
+                {proposal.commitments.some(c => c.user_id === user?.id) ? 'Committed!' : 'Commit to Join'}
               </button>
 
               {/* Comments Section */}
@@ -248,6 +248,7 @@ export function GatheringsBoard({ user }) { // Accept user prop
             fetchProposals(); // Refresh proposals after creation
           }}
           user={user}
+          location={{ lng: 0, lat: 0 }} // Placeholder location for now
         />
       )}
     </div>
