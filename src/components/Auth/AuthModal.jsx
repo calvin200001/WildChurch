@@ -122,7 +122,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 const { error } = await supabase.auth.signInWithOAuth({
                   provider: 'google',
                   options: {
-                    redirectTo: window.location.origin, // Redirects back to the app after OAuth
+                    redirectTo: window.location.origin, // Redirects back to the app after OAuth. IMPORTANT: Ensure this URL (e.g., http://localhost:3000/) is added to your Supabase project's Redirect URLs.
                   },
                 });
                 if (error) throw error;
