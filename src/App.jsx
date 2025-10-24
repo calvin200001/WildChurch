@@ -1,15 +1,3 @@
-import React, { useState, useEffect } from 'react';
-import Map from 'react-map-gl';
-import maplibregl from 'maplibre-gl';
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'; // Added useLocation
-import { MAP_CONFIG } from './lib/mapConfig';
-import { UserPinLayer } from './components/Map/UserPinLayer';
-import { DropPinModal } from './components/Map/DropPinModal';
-import { GatheringsBoard } from './components/GatheringsBoard';
-import AuthModal from './components/Auth/AuthModal'; // Import AuthModal
-import Seo from './components/Seo'; // Import Seo component
-import { supabase } from './lib/supabase'; // Import supabase client
-
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
 function AppContent() {
@@ -19,7 +7,7 @@ function AppContent() {
   const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
   const location = useLocation(); // Get current location for canonical URL
 
-  // Removed: const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links
+  console.log('User:', user); // Debugging: Check user state
 
   useEffect(() => {
     // Set initial user session
@@ -40,6 +28,7 @@ function AppContent() {
   }, []);
 
   const handleMapClick = (e) => {
+    console.log('Map clicked', e); // Debugging: Check if map click fires
     // Prevent modal from opening when clicking a pin/layer
     if (e.defaultPrevented) return;
     setPinLocation(e.lngLat);
@@ -138,7 +127,7 @@ function App() {
               type="website"
               canonicalUrl={`${baseUrl}/proposals`}
             />
-            <GatheringsBoard />
+            <GatheringsBoard user={user} /> {/* Pass user prop to GatheringsBoard */}
           </>
         } />
       </Routes>

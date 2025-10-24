@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { CreateProposalModal } from '@/components/Proposals/CreateProposalModal'; // Import CreateProposalModal
 
 // Helper component to render threaded comments
 const CommentThread = ({ comments, parentId = null, proposalId, user, onAddReply }) => {
@@ -65,16 +66,18 @@ const CommentThread = ({ comments, parentId = null, proposalId, user, onAddReply
   );
 };
 
-export function GatheringsBoard() {
+export function GatheringsBoard({ user }) { // Accept user prop
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  // const [user, setUser] = useState(null); // User is now passed as prop
   const [newCommentContent, setNewCommentContent] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false); // State for create proposal modal
 
-  const fetchUser = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-  }, []);
+  // Removed fetchUser as user is passed as prop
+  // const fetchUser = useCallback(async () => {
+  //   const { data: { user } } = await supabase.auth.getUser();
+  //   setUser(user);
+  // }, []);
 
   const fetchProposals = useCallback(async () => {
     setLoading(true);
@@ -98,7 +101,7 @@ export function GatheringsBoard() {
   }, []);
 
   useEffect(() => {
-    fetchUser();
+    // fetchUser(); // No longer needed as user is passed as prop
     fetchProposals();
 
     const subscription = supabase
@@ -120,7 +123,7 @@ export function GatheringsBoard() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchUser, fetchProposals]);
+  }, [fetchProposals]); // Removed fetchUser from dependencies
 
   const handleCommit = async (proposalId) => {
     if (!user) {
@@ -165,7 +168,17 @@ export function GatheringsBoard() {
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Gathering Proposals</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Gathering Proposals</h1>
+        {user && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
+          >
+            + Propose a Gathering
+          </button>
+        )}
+      </div>
       {proposals.length === 0 ? (
         <p className="text-gray-600">No active proposals at the moment. Be the first to propose one!</p>
       ) : (
@@ -185,7 +198,7 @@ export function GatheringsBoard() {
               </p>
               <button
                 onClick={() => handleCommit(proposal.id)}
-                disabled={!user || proposal.commitments.some(c => c.user_id === user.id)}
+                disabled={!user || proposal.commitments.some(c => c.user.id === user?.id)}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {proposal.commitments.some(c => c.user.id === user?.id) ? 'Committed!' : 'Commit to Join'}
@@ -226,6 +239,16 @@ export function GatheringsBoard() {
             </div>
           ))}
         </div>
+      )}
+      {showCreateModal && (
+        <CreateProposalModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchProposals(); // Refresh proposals after creation
+          }}
+          user={user}
+        />
       )}
     </div>
   );
