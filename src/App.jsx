@@ -12,32 +12,33 @@ import { supabase } from './lib/supabase';
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
-function AppContent() {
+function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Accept user and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
-  const [user, setUser] = useState(null); // State to store authenticated user
-  const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
+  // const [user, setUser] = useState(null); // State moved to App component
+  // const [showAuthModal, setShowAuthModal] = useState(false); // State moved to App component
   const location = useLocation(); // Get current location for canonical URL
 
   console.log('User:', user); // Debugging: Check user state
 
-  useEffect(() => {
-    // Set initial user session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-    });
+  // useEffect for auth state changes moved to App component
+  // useEffect(() => {
+  //   // Set initial user session
+  //   supabase.auth.getSession().then(({ data: { session } }) => {
+  //     setUser(session?.user || null);
+  //   });
 
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-      }
-    );
+  //   // Listen for auth state changes
+  //   const { data: authListener } = supabase.auth.onAuthStateChange(
+  //     (event, session) => {
+  //       setUser(session?.user || null);
+  //     }
+  //   );
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  //   return () => {
+  //     authListener.subscription.unsubscribe();
+  //   };
+  // }, []);
 
   const handleMapClick = (e) => {
     console.log('Map clicked', e); // Debugging: Check if map click fires
@@ -126,10 +127,31 @@ function AppContent() {
 }
 
 function App() {
+  const [user, setUser] = useState(null); // State to store authenticated user
+  const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
+
+  useEffect(() => {
+    // Set initial user session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppContent />} />
+        <Route path="/" element={<AppContent user={user} setUser={setUser} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
         <Route path="/proposals" element={
           <>
             <Seo
