@@ -10,6 +10,7 @@ import AuthModal from './components/Auth/AuthModal'; // Import AuthModal
 import Seo from './components/Seo'; // Import Seo component
 import { supabase } from './lib/supabase'; // Import supabase client
 
+const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
 function AppContent() {
   const [showDropPinModal, setShowDropPinModal] = useState(false);
@@ -18,7 +19,7 @@ function AppContent() {
   const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
   const location = useLocation(); // Get current location for canonical URL
 
-  const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links
+  // Removed: const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links
 
   useEffect(() => {
     // Set initial user session
