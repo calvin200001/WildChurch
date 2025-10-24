@@ -90,6 +90,7 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
       </Map>
       {showDropPinModal && (
         <DropPinModal
+            isOpen={showDropPinModal} // Pass isOpen prop
             location={pinLocation}
             user={user} // Pass the user object
             onClose={() => setShowDropPinModal(false)}
