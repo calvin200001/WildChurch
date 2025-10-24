@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Map, { MapProvider } from 'react-map-gl';
+import Map from 'react-map-gl';
 import { MAP_CONFIG } from './lib/mapConfig';
 import { UserPinLayer } from './components/Map/UserPinLayer';
 import { DropPinModal } from './components/Map/DropPinModal';
@@ -10,41 +10,44 @@ function App() {
   const [pinLocation, setPinLocation] = useState(null);
 
   const handleMapClick = (e) => {
+    // Prevent modal from opening when clicking a pin/layer
+    if (e.defaultPrevented) return;
     setPinLocation(e.lngLat);
     setShowDropPinModal(true);
   };
 
+  // Define viewPinDetails on the window object so the popup can call it
   window.viewPinDetails = (pinId) => {
     alert(`Viewing details for pin: ${pinId}`);
   };
 
   return (
-    <MapProvider>
-        <Map
-            initialViewState={{
-                longitude: MAP_CONFIG.center[0],
-                latitude: MAP_CONFIG.center[1],
-                zoom: MAP_CONFIG.zoom
+    <>
+      <Map
+        initialViewState={{
+            longitude: MAP_CONFIG.center[0],
+            latitude: MAP_CONFIG.center[1],
+            zoom: MAP_CONFIG.zoom
+        }}
+        minZoom={MAP_CONFIG.minZoom}
+        maxZoom={MAP_CONFIG.maxZoom}
+        style={{ width: '100vw', height: '100vh' }}
+        mapStyle={MAP_CONFIG.style}
+        onClick={handleMapClick}
+      >
+        <UserPinLayer />
+      </Map>
+      {showDropPinModal && (
+        <DropPinModal
+            location={pinLocation}
+            onClose={() => setShowDropPinModal(false)}
+            onSuccess={() => {
+                setShowDropPinModal(false);
+                // Realtime should update the pins automatically
             }}
-            minZoom={MAP_CONFIG.minZoom}
-            maxZoom={MAP_CONFIG.maxZoom}
-            style={{ width: '100vw', height: '100vh' }}
-            mapStyle={MAP_CONFIG.style}
-            onClick={handleMapClick}
-        >
-            <UserPinLayer />
-        </Map>
-        {showDropPinModal && (
-            <DropPinModal
-                location={pinLocation}
-                onClose={() => setShowDropPinModal(false)}
-                onSuccess={() => {
-                    setShowDropPinModal(false);
-                    // maybe refresh pins? UserPinLayer should do this automatically with realtime
-                }}
-            />
-        )}
-    </MapProvider>
+        />
+      )}
+    </>
   );
 }
 
