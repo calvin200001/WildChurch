@@ -17,20 +17,17 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
   async function handleSubmit(e) {
     e.preventDefault();
     
-    // Removed redundant supabase.auth.getUser() call as user is passed as prop
-    // if (!user) { // This check is now handled by the conditional rendering above
-    //     console.error('User not logged in');
-    //     return;
-    // }
+    console.log('Submitting pin with location:', location);
+    console.log('Form data:', formData);
 
     let data, error;
 
     if (formData.type === 'gathering') {
-      // Create a meeting proposal
+      console.log('Creating meeting proposal...');
       ({ data, error } = await supabase
         .from('meeting_proposals')
         .insert({
-          proposed_location: `POINT(${location.lng} ${location.lat})`,
+          proposed_location: `SRID=4326;POINT(${location.lng} ${location.lat})`,
           proposed_type: 'gathering',
           title: formData.title,
           description: formData.description,
@@ -41,8 +38,9 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
         .select()
         .single());
 
+      console.log('Proposal result:', { data, error });
+
       if (!error) {
-        // Automatically commit the creator to the proposal
         await supabase.from('proposal_commitments').insert({
           proposal_id: data.id,
           user_id: user.id
@@ -50,11 +48,11 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
       }
 
     } else {
-      // Create a regular location pin (open_camp, quiet_place, resource)
+      console.log('Creating location pin...');
       ({ data, error } = await supabase
         .from('locations')
         .insert({
-          location: `POINT(${location.lng} ${location.lat})`,
+          location: `SRID=4326;POINT(${location.lng} ${location.lat})`,
           type: formData.type,
           title: formData.title,
           description: formData.description,
@@ -64,9 +62,11 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
         .select()
         .single());
 
+      console.log('Location insert result:', { data, error });
+
       if (!error && formData.tags.length > 0) {
-        // Add tags to the new location
-        await supabase
+        console.log('Adding tags...');
+        const tagsResult = await supabase
           .from('pin_tags')
           .insert(
             formData.tags.map(tag => ({
@@ -74,14 +74,17 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
               tag
             }))
           );
+        console.log('Tags result:', tagsResult);
       }
     }
 
     if (error) {
       console.error('Error creating pin/proposal:', error);
+      alert(`Error: ${error.message}`); // Show user the error
       return;
     }
 
+    console.log('Success! Pin created:', data);
     onSuccess(data);
     onClose();
   }

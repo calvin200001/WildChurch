@@ -27,14 +27,22 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
     console.log('Map clicked', e);
     
     // IMPORTANT: Check if we clicked on a map layer/feature
-    const features = e.target.queryRenderedFeatures(e.point, {
-      layers: ['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters']
-    });
-    
-    if (features.length > 0) {
-      // Clicked on an existing pin/cluster, don't open modal
-      console.log('Clicked on feature, not opening modal');
-      return;
+    // Only query if the map is loaded and layers exist
+    if (e.target && e.target.isStyleLoaded && e.target.isStyleLoaded()) {
+      try {
+        const features = e.target.queryRenderedFeatures(e.point, {
+          layers: ['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters']
+        });
+        
+        if (features.length > 0) {
+          // Clicked on an existing pin/cluster, don't open modal
+          console.log('Clicked on feature, not opening modal');
+          return;
+        }
+      } catch (error) {
+        // Layers don't exist yet, that's OK - continue to open modal
+        console.log('Layers not ready yet, opening modal anyway');
+      }
     }
     
     // Clicked on empty map - open modal
@@ -84,7 +92,6 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
         style={{ width: '100%', height: '100%' }}
         mapStyle={MAP_CONFIG.style}
         onClick={handleMapClick}
-        interactiveLayerIds={['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters']} // IMPORTANT: Tell react-map-gl which layers are clickable
       >
         <UserPinLayer />
         <MapControls /> {/* Add this */}
