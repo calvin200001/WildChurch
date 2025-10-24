@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
@@ -6,17 +6,49 @@ import { MAP_CONFIG } from './lib/mapConfig';
 import { UserPinLayer } from './components/Map/UserPinLayer';
 import { DropPinModal } from './components/Map/DropPinModal';
 import { GatheringsBoard } from './components/GatheringsBoard';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import AuthModal from './components/Auth/AuthModal'; // Import AuthModal
+import { supabase } from './lib/supabase'; // Import supabase client
+
 
 function AppContent() {
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
+  const [user, setUser] = useState(null); // State to store authenticated user
+  const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
+
+  useEffect(() => {
+    // Set initial user session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleMapClick = (e) => {
     // Prevent modal from opening when clicking a pin/layer
     if (e.defaultPrevented) return;
     setPinLocation(e.lngLat);
     setShowDropPinModal(true);
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error logging out:', error.message);
+    } else {
+      setUser(null);
+      console.log('User logged out');
+    }
   };
 
   // Define viewPinDetails on the window object so the popup can call it
@@ -44,6 +76,7 @@ function AppContent() {
       {showDropPinModal && (
         <DropPinModal
             location={pinLocation}
+            user={user} // Pass the user object
             onClose={() => setShowDropPinModal(false)}
             onSuccess={() => {
                 setShowDropPinModal(false);
@@ -51,9 +84,30 @@ function AppContent() {
             }}
         />
       )}
-      <div className="absolute top-4 left-4 bg-white p-2 rounded-md shadow-md z-10">
+      <div className="absolute top-4 left-4 bg-white p-2 rounded-md shadow-md z-10 flex items-center space-x-4">
         <Link to="/proposals" className="text-blue-600 hover:underline">View Proposals</Link>
+        {user ? (
+          <>
+            <span className="text-gray-700">Hello, {user.email}</span>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline text-sm"
+            >
+              Log Out
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline text-sm"
+            >
+              Sign Up / Log In
+            </button>
+          </>
+        )}
       </div>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 }

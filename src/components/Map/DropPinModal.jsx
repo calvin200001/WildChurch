@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export function DropPinModal({ location, onClose, onSuccess }) {
+export function DropPinModal({ location, onClose, onSuccess, user }) { // Added user prop
   const [formData, setFormData] = useState({
     type: 'open_camp',
     title: '',
@@ -11,15 +11,29 @@ export function DropPinModal({ location, onClose, onSuccess }) {
     proposedStartTime: null
   });
 
+  if (!user) { // Conditional rendering if user is not logged in
+    return (
+      <div className="modal p-4 bg-white rounded-lg shadow-lg max-w-md mx-auto my-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Authentication Required</h2>
+        <p className="text-gray-700 mb-6">Please log in or sign up to drop a pin or propose a gathering.</p>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          Close
+        </button>
+      </div>
+    );
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        console.error('User not logged in');
-        return;
-    }
+    // Removed redundant supabase.auth.getUser() call as user is passed as prop
+    // if (!user) { // This check is now handled by the conditional rendering above
+    //     console.error('User not logged in');
+    //     return;
+    // }
 
     let data, error;
 
