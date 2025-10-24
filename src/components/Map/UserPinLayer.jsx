@@ -69,10 +69,12 @@ export function UserPinLayer() {
       map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#2d5016', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
       map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#6b2d5c', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
       map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#4a5568', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
+      map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true, 'text-field': ['get', 'title'], 'text-offset': [0, 1.5], 'text-size': 12 }, paint: { 'text-color': '#0000FF', 'text-halo-color': '#fff', 'text-halo-width': 1 } });
 
       map.on('click', 'open-camps', (e) => handlePinClick(e, map));
       map.on('click', 'gatherings', (e) => handlePinClick(e, map));
       map.on('click', 'quiet-places', (e) => handlePinClick(e, map));
+      map.on('click', 'resources', (e) => handlePinClick(e, map));
     } else {
       map.getSource('user-pins').setData(geojson);
     }
@@ -86,6 +88,7 @@ export function UserPinLayer() {
         { name: 'campfire-icon', url: '/campfire-icon.svg' },
         { name: 'gathering-icon', url: '/gathering-icon.svg' },
         { name: 'quiet-icon', url: '/quiet-icon.svg' },
+        { name: 'resource-icon', url: '/resource-icon.svg' },
       ];
 
       let loadedIconCount = 0;

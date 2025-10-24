@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import Map from 'react-map-gl';
+import maplibregl from 'maplibre-gl';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { MAP_CONFIG } from './lib/mapConfig';
 import { UserPinLayer } from './components/Map/UserPinLayer';
 import { DropPinModal } from './components/Map/DropPinModal';
+import { GatheringsBoard } from './components/GatheringsBoard';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-function App() {
+function AppContent() {
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
 
@@ -22,8 +25,9 @@ function App() {
   };
 
   return (
-    <>
+    <div className="relative w-screen h-screen">
       <Map
+        mapLib={maplibregl}
         initialViewState={{
             longitude: MAP_CONFIG.center[0],
             latitude: MAP_CONFIG.center[1],
@@ -31,7 +35,7 @@ function App() {
         }}
         minZoom={MAP_CONFIG.minZoom}
         maxZoom={MAP_CONFIG.maxZoom}
-        style={{ width: '100vw', height: '100vh' }}
+        style={{ width: '100%', height: '100%' }}
         mapStyle={MAP_CONFIG.style}
         onClick={handleMapClick}
       >
@@ -47,8 +51,23 @@ function App() {
             }}
         />
       )}
-    </>
+      <div className="absolute top-4 left-4 bg-white p-2 rounded-md shadow-md z-10">
+        <Link to="/proposals" className="text-blue-600 hover:underline">View Proposals</Link>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AppContent />} />
+        <Route path="/proposals" element={<GatheringsBoard />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
 export default App;
+
