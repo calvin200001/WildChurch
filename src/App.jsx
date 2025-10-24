@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'; // Added useLocation
 import { MAP_CONFIG } from './lib/mapConfig';
 import { UserPinLayer } from './components/Map/UserPinLayer';
 import { DropPinModal } from './components/Map/DropPinModal';
 import { GatheringsBoard } from './components/GatheringsBoard';
 import AuthModal from './components/Auth/AuthModal'; // Import AuthModal
+import Seo from './components/Seo'; // Import Seo component
 import { supabase } from './lib/supabase'; // Import supabase client
 
 
@@ -15,6 +16,9 @@ function AppContent() {
   const [pinLocation, setPinLocation] = useState(null);
   const [user, setUser] = useState(null); // State to store authenticated user
   const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
+  const location = useLocation(); // Get current location for canonical URL
+
+  const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links
 
   useEffect(() => {
     // Set initial user session
@@ -58,6 +62,13 @@ function AppContent() {
 
   return (
     <div className="relative w-screen h-screen">
+      <Seo
+        title="WildChurch - Church in the wild, wherever you are"
+        description="Connect with dispersed Christian communities through crowdsourced mapping, real-time gatherings, and authentic fellowship."
+        name="WildChurch"
+        type="website"
+        canonicalUrl={`${baseUrl}${location.pathname}`}
+      />
       <Map
         mapLib={maplibregl}
         initialViewState={{
@@ -117,7 +128,18 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AppContent />} />
-        <Route path="/proposals" element={<GatheringsBoard />} />
+        <Route path="/proposals" element={
+          <>
+            <Seo
+              title="WildChurch - Proposals"
+              description="View and commit to proposed gatherings in the wild."
+              name="WildChurch"
+              type="website"
+              canonicalUrl={`${baseUrl}/proposals`}
+            />
+            <GatheringsBoard />
+          </>
+        } />
       </Routes>
     </BrowserRouter>
   );
