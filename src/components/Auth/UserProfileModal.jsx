@@ -21,76 +21,76 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   }, [isOpen, user]);
 
   async function getProfile() {
-  setLoading(true);
-  console.log('UserProfileModal: Attempting to fetch profile for user.id:', user.id);
-  
-  try {
-    console.log('UserProfileModal: Executing Supabase query...');
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=username,avatar_url,interests,beliefs,state`,
-      {
-        method: 'GET',
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const data = await response.json();
-    const error = response.ok ? null : { message: 'Failed to fetch profile' };
+    setLoading(true);
+    console.log('UserProfileModal: Attempting to fetch profile for user.id:', user.id);
     
-    // maybeSingle() behavior: if no data, it returns an empty array, not null
-    const profileData = data && data.length > 0 ? data[0] : null;
+    try {
+      console.log('UserProfileModal: Executing Supabase query...');
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=username,avatar_url,interests,beliefs,state`,
+        {
+          method: 'GET',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    console.log('UserProfileModal: Query completed. Data:', profileData, 'Error:', error);
+      const data = await response.json();
+      const error = response.ok ? null : { message: 'Failed to fetch profile' };
+      
+      // maybeSingle() behavior: if no data, it returns an empty array, not null
+      const profileData = data && data.length > 0 ? data[0] : null;
 
-    if (error) {
-      // Real error occurred
-      console.error('UserProfileModal: Database error:', error);
-      // Still allow user to fill in the form
-      setUsername('');
-      setAvatarUrl('');
-      setInterests('');
-      setBeliefs('');
-      setProfileState('');
-      setAvatarPreview('');
-    } else if (data) {
-      // Profile exists - populate form
-      console.log('UserProfileModal: Profile found:', data);
-      setUsername(data.username || '');
-      setAvatarUrl(data.avatar_url || '');
-      setInterests(data.interests ? data.interests.join(', ') : '');
-      setBeliefs(data.beliefs ? data.beliefs.join(', ') : '');
-      setProfileState(data.state || '');
-      if (data.avatar_url) {
-        downloadImage(data.avatar_url);
+      console.log('UserProfileModal: Query completed. Data:', profileData, 'Error:', error);
+
+      if (error) {
+        // Real error occurred
+        console.error('UserProfileModal: Database error:', error);
+        // Still allow user to fill in the form
+        setUsername('');
+        setAvatarUrl('');
+        setInterests('');
+        setBeliefs('');
+        setProfileState('');
+        setAvatarPreview('');
+      } else if (data) {
+        // Profile exists - populate form
+        console.log('UserProfileModal: Profile found:', data);
+        setUsername(data.username || '');
+        setAvatarUrl(data.avatar_url || '');
+        setInterests(data.interests ? data.interests.join(', ') : '');
+        setBeliefs(data.beliefs ? data.beliefs.join(', ') : '');
+        setProfileState(data.state || '');
+        if (data.avatar_url) {
+          downloadImage(data.avatar_url);
+        }
+      } else {
+        // No profile exists yet - show empty form
+        console.log('UserProfileModal: No profile found. User can create one.');
+        setUsername('');
+        setAvatarUrl('');
+        setInterests('');
+        setBeliefs('');
+        setProfileState('');
+        setAvatarPreview('');
       }
-    } else {
-      // No profile exists yet - show empty form
-      console.log('UserProfileModal: No profile found. User can create one.');
+    } catch (err) {
+      console.error('UserProfileModal: Unexpected error:', err);
+      // Still allow form interaction
       setUsername('');
       setAvatarUrl('');
       setInterests('');
       setBeliefs('');
       setProfileState('');
       setAvatarPreview('');
+    } finally {
+      setLoading(false); // ALWAYS stop loading
+      console.log('UserProfileModal: Loading finished. Loading state:', false);
     }
-  } catch (err) {
-    console.error('UserProfileModal: Unexpected error:', err);
-    // Still allow form interaction
-    setUsername('');
-    setAvatarUrl('');
-    setInterests('');
-    setBeliefs('');
-    setProfileState('');
-    setAvatarPreview('');
-  } finally {
-    setLoading(false); // ALWAYS stop loading
-    console.log('UserProfileModal: Loading finished. Loading state:', false);
   }
-}
 
   async function downloadImage(path) {
     try {
@@ -167,6 +167,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     } finally {
       setUploading(false);
     }
+  }
 
   async function updateProfile(event) {
     event.preventDefault();
@@ -299,3 +300,5 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     </div>
   );
 }
+
+export default UserProfileModal;
