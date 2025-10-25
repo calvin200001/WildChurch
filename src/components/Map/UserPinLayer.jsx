@@ -54,7 +54,7 @@ export function UserPinLayer() {
       try {
         console.log('UserPinLayer: About to call RPC...');
         
-        const { data: pins, error } = await supabase.rpc('get_locations_geojson');
+        const { data: pins, error } = await supabase.rpc('get_pins_json'); // Changed name
         
         console.log('UserPinLayer: RPC RETURNED!');
         console.log('UserPinLayer: pins type:', typeof pins);
