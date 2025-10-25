@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { MessageInput } from './MessageInput';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { User } from 'lucide-react'; // For default avatar
 
-export function ConversationView({ user, profile, locationId }) { // Added locationId prop
-  const [messages, setMessages] = useState([]); // Renamed to comments for clarity, but keeping messages for now
+export function ConversationView({ user, profile }) {
+  const { conversationId } = useParams();
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
@@ -15,66 +17,71 @@ export function ConversationView({ user, profile, locationId }) { // Added locat
   };
 
   useEffect(() => {
-    if (!locationId || !user) { // Use locationId
+    if (!conversationId || !user) {
       setMessages([]);
       setLoading(false);
       return;
     }
 
-    const fetchComments = async () => { // Renamed function for clarity
+    const fetchMessages = async () => {
       setLoading(true);
       setError(null);
-
+      
       try {
         const { data, error } = await supabase
-          .from('pin_comments') // Changed table
+          .from('messages')
           .select(`
             *,
-            profiles ( username, avatar_url ) // Changed select clause
+            sender:sender_id (
+              id,
+              username,
+              avatar_url
+            )
           `)
-          .eq('pin_id', locationId) // Changed filter column and value
+          .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true });
 
         if (error) throw error;
-
-        const commentsWithProfiles = data.map(comment => ({ // Renamed for clarity
-          ...comment,
-          sender: comment.profiles // Assuming 'profiles' is the joined data
+        
+        // Transform the data to match expected structure
+        const messagesWithProfiles = data.map(msg => ({
+          ...msg,
+          sender: msg.sender // This is now the full profile object
         }));
-
-        setMessages(commentsWithProfiles); // Still using setMessages for now
+        
+        setMessages(messagesWithProfiles);
       } catch (err) {
-        console.error('Error fetching pin comments:', err); // Updated error message
-        setError('Failed to load pin comments.');
+        console.error('Error fetching messages:', err);
+        setError('Failed to load messages.');
         setMessages([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchComments(); // Call the new function
+    fetchMessages();
 
-    // Realtime subscription for new comments
-    const commentsSubscription = supabase // Renamed subscription
-      .channel(`pin_comments_${locationId}`) // Changed channel name
+    // Realtime subscription for new messages
+    const messagesSubscription = supabase
+      .channel(`conversation_${conversationId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'pin_comments', // Changed table
-          filter: `pin_id=eq.${locationId}` // Changed filter
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
         },
         (payload) => {
-          // Fetch sender profile for the new comment
+          // Fetch sender profile for the new message
           supabase
             .from('profiles')
             .select('username, avatar_url')
-            .eq('id', payload.new.user_id) // Changed to user_id
+            .eq('id', payload.new.sender_id)
             .single()
             .then(({ data: senderProfile, error: profileError }) => {
               if (profileError) {
-                console.error('Error fetching sender profile for new comment:', profileError);
+                console.error('Error fetching sender profile for new message:', profileError);
               }
               setMessages((prevMessages) => [
                 ...prevMessages,
@@ -86,28 +93,28 @@ export function ConversationView({ user, profile, locationId }) { // Added locat
       .subscribe();
 
     return () => {
-      commentsSubscription.unsubscribe(); // Unsubscribe from new channel
+      messagesSubscription.unsubscribe();
     };
-  }, [locationId, user]); // Dependency array updated
+  }, [conversationId, user]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   const handleSendMessage = async (content) => {
-    if (!user || !locationId || !content) return; // Use locationId
+    if (!user || !conversationId || !content) return;
 
-    const { error } = await supabase.from('pin_comments').insert({ // Changed table
-      pin_id: locationId, // Changed to pin_id
-      user_id: user.id, // Changed to user_id
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
       content: content,
     });
 
     if (error) {
-      console.error('Error sending comment:', error); // Updated error message
-      setError('Failed to send comment.');
+      console.error('Error sending message:', error);
+      setError('Failed to send message.');
     }
-    // Realtime will handle updating the comments state
+    // Realtime will handle updating the messages state
   };
 
   if (loading) {
