@@ -14,6 +14,7 @@ function handlePinClick(e, map) {
   }
   const typeEmoji = {'open_camp': '🏕️', 'gathering': '🙏', 'quiet_place': '🌲', 'resource': '📍'};
   
+  console.log('Creating popup for pin:', pin.properties.id);
   new maplibregl.Popup({ maxWidth: '320px', className: 'custom-popup' })
     .setLngLat(coordinates)
     .setHTML(`
