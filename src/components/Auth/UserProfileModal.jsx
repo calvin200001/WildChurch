@@ -76,6 +76,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     setAvatarPreview('');
   } finally {
     setLoading(false); // ALWAYS stop loading
+    console.log('UserProfileModal: Loading finished. Loading state:', false);
   }
 }
 
