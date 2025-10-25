@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
-import { MessageInput } from './MessageInput';
-import { LoadingSpinner } from '../LoadingSpinner';
+import { supabase } from '../lib/supabase';
+import { MessageInput } from './Messages/MessageInput';
+import { LoadingSpinner } from './LoadingSpinner';
 import { User } from 'lucide-react'; // For default avatar
 
 export function MessageBoard({ user, profile, locationId }) { // Renamed component and added locationId prop
