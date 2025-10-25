@@ -27,10 +27,19 @@ export function ConversationList({ user, profile, onSelectConversation }) {
       
       try {
         // Step 1: Get all conversations for this user
-        const { data: participantData, error: participantError } = await supabase
-          .from('conversation_participants')
-          .select('conversation_id')
-          .eq('user_id', user.id);
+        const participantResponse = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/conversation_participants?user_id=eq.${user.id}&select=conversation_id`,
+          {
+            method: 'GET',
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        const participantData = await participantResponse.json();
+        const participantError = participantResponse.ok ? null : { message: 'Failed to fetch participant data' };
 
         console.log('ConversationList: participantData:', participantData, 'participantError:', participantError);
 
