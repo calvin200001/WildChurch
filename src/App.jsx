@@ -18,7 +18,7 @@ import { UserSearch } from './components/UserSearch'; // New import
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
-function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Accept user and auth modal props
+function AppContent({ user, setUser, profile, getProfile, showAuthModal, setShowAuthModal }) { // Accept user, profile, and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
   const [showPinDetailsModal, setShowPinDetailsModal] = useState(false); // New state for pin details modal
@@ -130,7 +130,7 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
           isOpen={showUserProfileModal}
           onClose={() => setShowUserProfileModal(false)}
           user={user}
-          onUpdateProfile={() => { /* Potentially refresh user data */ }}
+          onUpdateProfile={() => getProfile(user.id)}
         />
       )}
     </div>
@@ -139,18 +139,47 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
 
 function App() {
   const [user, setUser] = useState(null); // State to store authenticated user
+  const [profile, setProfile] = useState(null); // New state for user profile
   const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
+
+  // Function to fetch user profile
+  const getProfile = async (userId) => {
+    if (!userId) {
+      setProfile(null);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching profile for header:', error);
+      setProfile(null);
+    } else {
+      setProfile(data);
+    }
+  };
 
   useEffect(() => {
     // Set initial user session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      if (session?.user) {
+        getProfile(session.user.id);
+      }
     });
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user || null);
+        if (session?.user) {
+          getProfile(session.user.id);
+        } else {
+          setProfile(null); // Clear profile if user logs out
+        }
       }
     );
 
@@ -162,7 +191,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppContent user={user} setUser={setUser} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
+        <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} getProfile={getProfile} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
         <Route path="/proposals" element={
           <>
             <Seo
@@ -192,6 +221,28 @@ function App() {
             />
             <div className="pt-16"> {/* Offset for fixed header */}
               <UserSearch />
+            </div>
+          </>
+        } />
+        <Route path="/messages" element={ // New route for messaging placeholder
+          <>
+            <Seo
+              title="WildChurch - Messages"
+              description="Your private conversations with other WildChurch members."
+              name="WildChurch"
+              type="website"
+              canonicalUrl={`${baseUrl}/messages`}
+            />
+            <Header
+              user={user}
+              onLogout={handleLogout}
+              onShowAuth={() => setShowAuthModal(true)}
+              onShowUserProfile={() => setShowUserProfileModal(true)}
+            />
+            <div className="pt-16 p-4 text-white text-center">
+              <h2 className="text-3xl font-bold mb-4">Messages</h2>
+              <p className="text-lg">Messaging system coming soon!</p>
+              <p className="text-gray-400">You can find other users via the "Find Users" link.</p>
             </div>
           </>
         } />

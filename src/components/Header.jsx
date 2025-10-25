@@ -2,7 +2,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, MapPin, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 
-export function Header({ user, onLogout, onShowAuth, onShowUserProfile }) {
+import { supabase } from '../lib/supabase'; // Import supabase to get public URL for avatar
+
+export function Header({ user, profile, onLogout, onShowAuth, onShowUserProfile }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -38,11 +40,26 @@ export function Header({ user, onLogout, onShowAuth, onShowUserProfile }) {
             >
               Find Users
             </Link>
+            <Link 
+              to="/messages" 
+              className="text-earth-200 hover:text-forest-500 transition-colors font-medium"
+            >
+              Messages
+            </Link>
             
             {user ? (
               <div className="flex items-center space-x-4">
+                {profile?.avatar_url ? (
+                  <img
+                    src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                    alt="Avatar"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="h-8 w-8 text-earth-300" />
+                )}
                 <span className="text-earth-300 text-sm">
-                  {user.email}
+                  {profile?.username || user.email}
                 </span>
                 <button
                   onClick={onShowUserProfile}
@@ -103,12 +120,30 @@ export function Header({ user, onLogout, onShowAuth, onShowUserProfile }) {
               >
                 Find Users
               </Link>
+              <Link 
+                to="/messages" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-earth-200 hover:text-forest-500 transition-colors py-2"
+              >
+                Messages
+              </Link>
               
               {user ? (
                 <>
-                  <span className="text-earth-300 text-sm py-2">
-                    {user.email}
-                  </span>
+                  <div className="flex items-center space-x-2 py-2">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                        alt="Avatar"
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-8 w-8 text-earth-300" />
+                    )}
+                    <span className="text-earth-300 text-sm">
+                      {profile?.username || user.email}
+                    </span>
+                  </div>
                   <button
                     onClick={() => {
                       onShowUserProfile();
