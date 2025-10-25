@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { MapPin } from 'lucide-react';
+import { checkRateLimit } from '../../lib/rateLimit'; // ADD THIS
 
 export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { // Accept isOpen prop // Added user prop
   const [formData, setFormData] = useState({
@@ -19,6 +20,26 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
     
     console.log('Submitting pin with location:', location);
     console.log('Form data:', formData);
+
+    if (!user) {
+      alert('You must be logged in to create a pin.');
+      return;
+    }
+
+    // ADD THIS BLOCK
+    const { allowed, remaining } = await checkRateLimit(
+      supabase,
+      user.id,
+      'create_pin',
+      5, // Max 5 pins per hour
+      60 // Per hour
+    );
+
+    if (!allowed) {
+      alert(`Rate limit exceeded. You can only create 5 pins per hour. Please wait before creating more. Remaining: ${remaining}`);
+      return;
+    }
+    // END ADD BLOCK
 
     let data, error;
 

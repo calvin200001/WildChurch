@@ -119,6 +119,7 @@ function AppContent({ user, setUser, profile, profileLoading, getProfile, handle
         <PinDetailsModal
           isOpen={showPinDetailsModal}
           pinId={selectedPinId}
+          user={user}
           onClose={() => setShowPinDetailsModal(false)}
         />
       )}

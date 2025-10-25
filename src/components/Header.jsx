@@ -18,7 +18,7 @@ export function Header({
   // Show loading state while profile is fetching
   const displayName = profileLoading
     ? 'Loading...'
-    : profile?.username || user?.email || 'User';
+    : profile?.first_name || profile?.username || user?.email || 'User';
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 bg-earth-900/95 backdrop-blur-sm border-b border-earth-700">

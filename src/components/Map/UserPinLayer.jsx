@@ -30,7 +30,7 @@ function handlePinClick(e, map) {
     .addTo(map);
 }
 
-export function UserPinLayer() {
+export function UserPinLayer({ searchQuery = '' }) {
   const { current: mapContainer } = useMap();
 
   // This is the single, controlling useEffect for this component's entire lifecycle.
@@ -63,7 +63,7 @@ export function UserPinLayer() {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
             },
-            body: '{}'
+            body: JSON.stringify({ search: searchQuery })
           }
         );
 
@@ -221,7 +221,7 @@ export function UserPinLayer() {
       });
       // Proper cleanup would remove sources and layers here, but this is often skipped if the map is permanent
     };
-  }, [mapContainer]); // This effect only re-runs if the map instance itself changes
+  }, [mapContainer, searchQuery]); // This effect only re-runs if the map instance itself changes
 
   return null;
 }

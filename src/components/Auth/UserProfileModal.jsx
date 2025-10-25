@@ -5,10 +5,14 @@ import { LoadingSpinner } from '../LoadingSpinner'; // Assuming a LoadingSpinner
 export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [bio, setBio] = useState('');
+  const [testimony, setTestimony] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [interests, setInterests] = useState(''); // Comma-separated string for now
   const [beliefs, setBeliefs] = useState(''); // Comma-separated string for now
   const [profileState, setProfileState] = useState(''); // User's state/region
+  const [messagingPolicy, setMessagingPolicy] = useState('anyone');
   const [uploading, setUploading] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -27,7 +31,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     try {
       console.log('UserProfileModal: Executing Supabase query...');
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=username,avatar_url,interests,beliefs,state`,
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=username,first_name,bio,testimony,avatar_url,interests,beliefs,state,messaging_policy`,
         {
           method: 'GET',
           headers: {
@@ -60,10 +64,14 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
         // Profile exists - populate form
         console.log('UserProfileModal: Profile found:', data);
         setUsername(data.username || '');
+        setFirstName(data.first_name || '');
+        setBio(data.bio || '');
+        setTestimony(data.testimony || '');
         setAvatarUrl(data.avatar_url || '');
         setInterests(data.interests ? data.interests.join(', ') : '');
         setBeliefs(data.beliefs ? data.beliefs.join(', ') : '');
         setProfileState(data.state || '');
+        setMessagingPolicy(data.messaging_policy || 'anyone');
         if (data.avatar_url) {
           downloadImage(data.avatar_url);
         }
@@ -71,20 +79,29 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
         // No profile exists yet - show empty form
         console.log('UserProfileModal: No profile found. User can create one.');
         setUsername('');
+        setFirstName('');
+        setBio('');
+        setTestimony('');
         setAvatarUrl('');
         setInterests('');
         setBeliefs('');
         setProfileState('');
+        setMessagingPolicy('anyone');
         setAvatarPreview('');
       }
     } catch (err) {
       console.error('UserProfileModal: Unexpected error:', err);
+      alert('Failed to load profile. Please refresh the page.');
       // Still allow form interaction
       setUsername('');
+      setFirstName('');
+      setBio('');
+      setTestimony('');
       setAvatarUrl('');
       setInterests('');
       setBeliefs('');
       setProfileState('');
+      setMessagingPolicy('anyone');
       setAvatarPreview('');
     } finally {
       setLoading(false); // ALWAYS stop loading
@@ -145,9 +162,8 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': file.type, // Use the file's actual content type
-            'x-upsert': 'true', // For upsert behavior
-            'cache-control': 'max-age=3600', // Cache control
+            'Content-Type': file.type,
+            'x-upsert': 'true',
           },
           body: file,
         }
@@ -158,7 +174,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
       const uploadData = await uploadResponse.json();
       console.log('UserProfileModal: JSON parsed successfully:', uploadData);
       
-      const uploadError = uploadResponse.ok ? null : { message: uploadData.message || 'Failed to upload avatar' };
+      const uploadError = uploadResponse.ok ? null : { message: uploadData.message || uploadData.error || 'Failed to upload avatar' };
 
       console.log('UserProfileModal: Supabase storage upload completed. Data:', uploadData, 'Error:', uploadError);
 
@@ -183,10 +199,14 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     const updates = {
       id: user.id,
       username,
+      first_name: firstName,
+      bio,
+      testimony,
       avatar_url: avatarUrl,
       interests: interests.split(',').map(s => s.trim()).filter(Boolean),
       beliefs: beliefs.split(',').map(s => s.trim()).filter(Boolean),
       state: profileState,
+      messaging_policy: messagingPolicy,
       updated_at: new Date(),
     };
 
@@ -218,6 +238,52 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
 
         {!loading && (
           <form onSubmit={updateProfile}>
+            <div className="mb-4">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
+              <input
+                id="username"
+                type="text"
+                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">First Name</label>
+              <input
+                id="firstName"
+                type="text"
+                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="bio" className="block text-sm font-medium text-gray-300">Bio</label>
+              <textarea
+                id="bio"
+                rows="3"
+                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself..."
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="testimony" className="block text-sm font-medium text-gray-300">Testimony (Optional)</label>
+              <textarea
+                id="testimony"
+                rows="3"
+                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                value={testimony}
+                onChange={(e) => setTestimony(e.target.value)}
+                placeholder="Share your faith journey..."
+              />
+            </div>
+
             <div className="mb-4">
               <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
               <input
@@ -283,6 +349,20 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
                 value={profileState}
                 onChange={(e) => setProfileState(e.target.value)}
               />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="messagingPolicy" className="block text-sm font-medium text-gray-300">Who Can Message You</label>
+              <select
+                id="messagingPolicy"
+                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                value={messagingPolicy}
+                onChange={(e) => setMessagingPolicy(e.target.value)}
+              >
+                <option value="anyone">Anyone</option>
+                <option value="following">People I Follow</option>
+                <option value="verified">Verified Users Only</option>
+              </select>
             </div>
 
             <div className="flex justify-end space-x-2">

@@ -1,63 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase'; // Adjust path as needed
+import { SafetyReview } from '../SafetyReview';
 
-export function PinDetailsModal({ isOpen, onClose, pinId }) {
+export function PinDetailsModal({ isOpen, onClose, pinId, user }) {
   const [pinDetails, setPinDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!isOpen || !pinId) {
-      setPinDetails(null);
-      setLoading(false);
-      return;
-    }
-
-    const fetchPinDetails = async () => {
-      setLoading(true);
-      setError(null);
-      console.log('PinDetailsModal: Fetching details for pinId:', pinId);
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/locations?id=eq.${pinId}&select=*,profiles(username,avatar_url)`,
-          {
-            method: 'GET',
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        const data = await response.json();
-        const error = response.ok ? null : { message: 'Failed to fetch pin details' };
-
-        console.log('PinDetailsModal: Fetch API data:', data, 'error:', error);
-
-        if (error) {
-          throw error;
+  const fetchPinDetails = useCallback(async () => {
+    if (!pinId) return;
+    setLoading(true);
+    setError(null);
+    console.log('PinDetailsModal: Fetching details for pinId:', pinId);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/locations?id=eq.${pinId}&select=*,profiles(username,avatar_url)`,
+        {
+          method: 'GET',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
         }
-        if (!data || data.length === 0) {
-          setError('Pin not found.');
-          setPinDetails(null);
-          return;
-        }
-        // Assuming .single() behavior, we expect an array with one item or empty
-        setPinDetails(data[0]); 
-        console.log('PinDetailsModal: Successfully set pin details:', data[0]);
-      } catch (err) {
-        console.error('PinDetailsModal: Error fetching pin details:', err);
-        setError('Failed to load pin details.');
-        setPinDetails(null);
-      } finally {
-        setLoading(false);
-        console.log('PinDetailsModal: Loading finished. Loading state:', false);
+      );
+
+      const data = await response.json();
+      const error = response.ok ? null : { message: 'Failed to fetch pin details' };
+
+      console.log('PinDetailsModal: Fetch API data:', data, 'error:', error);
+
+      if (error) {
+        throw error;
       }
-    };
+      if (!data || data.length === 0) {
+        setError('Pin not found.');
+        setPinDetails(null);
+        return;
+      }
+      setPinDetails(data[0]);
+      console.log('PinDetailsModal: Successfully set pin details:', data[0]);
+    } catch (err) {
+      console.error('PinDetailsModal: Error fetching pin details:', err);
+      setError('Failed to load pin details.');
+      setPinDetails(null);
+    } finally {
+      setLoading(false);
+      console.log('PinDetailsModal: Loading finished. Loading state:', false);
+    }
+  }, [pinId]);
 
-    fetchPinDetails();
-  }, [isOpen, pinId]);
+  useEffect(() => {
+    if (isOpen) {
+      fetchPinDetails();
+    }
+  }, [isOpen, fetchPinDetails]);
 
   if (!isOpen) return null;
 
@@ -80,6 +77,9 @@ export function PinDetailsModal({ isOpen, onClose, pinId }) {
             <p className="text-gray-300"><strong>Description:</strong> {pinDetails.description || 'N/A'}</p>
             <p className="text-gray-300"><strong>Creator:</strong> {pinDetails.creator_name || 'Anonymous'}</p>
             {/* Add more details as needed */}
+            <div className="mt-4">
+              <SafetyReview locationId={pinId} user={user} onReviewSubmitted={fetchPinDetails} />
+            </div>
           </div>
         )}
       </div>
