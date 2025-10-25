@@ -28,6 +28,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        exclude: ['sitemap.xml'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.workers\.dev\/.*/i,
@@ -45,14 +46,13 @@ export default defineConfig({
           },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 5 * 60 // 5 minutes
-              },
-              networkTimeoutSeconds: 10
+              }
             }
           }
         ]

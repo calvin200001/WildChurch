@@ -7,6 +7,7 @@ const offlineStore = localforage.createInstance({
 export const offlineStorage = {
   // Save pins for offline viewing
   async savePins(pins) {
+    console.log('offlineStorage: Saving pins to cache.', pins.length, 'pins.');
     await offlineStore.setItem('cached-pins', {
       data: pins,
       timestamp: Date.now()
@@ -15,13 +16,19 @@ export const offlineStorage = {
 
   async getCachedPins() {
     const cached = await offlineStore.getItem('cached-pins');
-    if (!cached) return null;
-    
-    // Return if less than 1 hour old
-    if (Date.now() - cached.timestamp < 60 * 60 * 1000) {
-      return cached.data;
+    if (!cached) {
+      console.log('offlineStorage: No cached pins found.');
+      return null;
     }
-    return null;
+    
+    const oneHour = 60 * 60 * 1000;
+    if (Date.now() - cached.timestamp < oneHour) {
+      console.log('offlineStorage: Returning cached pins (less than 1 hour old).');
+      return cached.data;
+    } else {
+      console.log('offlineStorage: Cached pins are stale (older than 1 hour).');
+      return null;
+    }
   },
 
   // Queue actions when offline

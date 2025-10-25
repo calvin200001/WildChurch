@@ -28,10 +28,13 @@ export function useOfflineSync() {
 
   async function syncOfflineActions() {
     setSyncing(true);
+    console.log('useOfflineSync: Starting offline action sync.');
     const queue = await offlineStorage.getActionQueue();
+    console.log('useOfflineSync: Found', queue.length, 'actions in queue.');
 
     for (const action of queue) {
       try {
+        console.log('useOfflineSync: Syncing action:', action.type, action.id);
         switch (action.type) {
           case 'create_pin':
             await supabase.from('locations').insert(action.data);
@@ -43,12 +46,14 @@ export function useOfflineSync() {
             await supabase.from('messages').insert(action.data);
             break;
         }
+        console.log('useOfflineSync: Successfully synced action:', action.type, action.id);
       } catch (error) {
-        console.error('Failed to sync action:', action, error);
+        console.error('useOfflineSync: Failed to sync action:', action, error);
       }
     }
 
     await offlineStorage.clearActionQueue();
+    console.log('useOfflineSync: Offline action queue cleared. Syncing finished.');
     setSyncing(false);
   }
 
