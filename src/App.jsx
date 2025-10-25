@@ -171,23 +171,52 @@ function App() {
   };
 
   useEffect(() => {
-    // Set initial user session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
+    // Function to handle session from URL and potentially refresh
+    const handleSessionFromUrl = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('handleSessionFromUrl: Initial session from URL:', session);
+
       if (session?.user) {
-        getProfile(session.user.id);
+        setUser(session.user);
+        await getProfile(session.user.id);
+
+        // Check if session is short-lived or stale and attempt refresh
+        const currentTime = Date.now() / 1000;
+        if (session.expires_at && (session.expires_at - currentTime < 60 || session.expires_at - currentTime > 3600)) {
+          console.log('handleSessionFromUrl: Session appears problematic (short-lived or very old), attempting to refresh...');
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error('handleSessionFromUrl: Error refreshing session:', refreshError);
+          } else if (refreshData.session) {
+            console.log('handleSessionFromUrl: Session successfully refreshed after initial check:', refreshData.session);
+            setUser(refreshData.session.user);
+            await getProfile(refreshData.session.user.id);
+          }
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
       }
-    });
+
+      // Clear URL hash to prevent re-processing stale tokens
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        console.log('URL hash cleared.');
+      }
+    };
+
+    // Call immediately on mount
+    handleSessionFromUrl();
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => { // Made async to await getProfile
+      async (event, session) => {
         console.log('Auth state change event:', event);
         console.log('Auth state change session:', session);
 
         if (session?.user) {
           setUser(session.user);
-          await getProfile(session.user.id); // Await getProfile to ensure it completes
+          await getProfile(session.user.id);
         } else {
           setUser(null);
           setProfile(null); // Clear profile if user logs out
@@ -213,7 +242,16 @@ function App() {
               type="website"
               canonicalUrl={`${baseUrl}/proposals`}
             />
-            <GatheringsBoard user={user} /> {/* Pass user prop to GatheringsBoard */}
+            <Header
+              user={user}
+              profile={profile}
+              onLogout={handleLogout}
+              onShowAuth={() => setShowAuthModal(true)}
+              onShowUserProfile={() => setShowUserProfileModal(true)}
+            />
+            <div className="pt-16"> {/* Offset for fixed header */}
+              <GatheringsBoard user={user} /> {/* Pass user prop to GatheringsBoard */}
+            </div>
           </>
         } />
         <Route path="/users" element={ // New route for user search
