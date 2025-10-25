@@ -22,15 +22,18 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
 
   async function getProfile() {
     setLoading(true);
+    console.log('UserProfileModal: Attempting to fetch profile for user.id:', user.id);
     const { data, error } = await supabase
       .from('profiles')
       .select('username, avatar_url, interests, beliefs, state')
       .eq('id', user.id)
       .single();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+      console.error('UserProfileModal: Error fetching profile:', error);
+      // Optionally set an error state to display to the user
     } else if (data) {
+      console.log('UserProfileModal: Profile data found:', data);
       setUsername(data.username || '');
       setAvatarUrl(data.avatar_url || '');
       setInterests(data.interests ? data.interests.join(', ') : '');
@@ -39,6 +42,14 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
       if (data.avatar_url) {
         downloadImage(data.avatar_url);
       }
+    } else {
+      console.log('UserProfileModal: No profile found for user. Initializing with empty values.');
+      setUsername('');
+      setAvatarUrl('');
+      setInterests('');
+      setBeliefs('');
+      setProfileState('');
+      setAvatarPreview(''); // Clear any previous preview
     }
     setLoading(false);
   }
