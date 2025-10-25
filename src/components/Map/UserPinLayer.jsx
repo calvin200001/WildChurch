@@ -50,7 +50,7 @@ export function UserPinLayer() {
       }
 
       // 2. Fetch data using the robust PostGIS function
-      console.log("UserPinLayer: Fetching pins using 'get_locations_geojson' RPC...");
+      console.log("UserPinLayer: Fetching pins using 'get_pins_json' RPC...");
       try {
         console.log('UserPinLayer: About to call RPC...');
         
@@ -72,89 +72,103 @@ export function UserPinLayer() {
         }
         
         console.log('UserPinLayer: Processing', pins.length, 'pins');
+
+        // 3. Transform data into a valid GeoJSON FeatureCollection (MOVED INSIDE TRY)
+        const geojson = {
+          type: 'FeatureCollection',
+          features: pins.map(pin => ({
+            type: 'Feature',
+            geometry: pin.geojson,
+            properties: { 
+              id: pin.id, 
+              title: pin.title, 
+              type: pin.type, 
+              description: pin.description, 
+              creator: pin.creator_name, 
+              tags: JSON.stringify(pin.tags) 
+            }
+          }))
+        };
+        console.log('UserPinLayer: GeoJSON created:', geojson);
+
+        // 4. Add the source and all layers to the map
+        console.log('UserPinLayer: Map object before addSource:', map);
+        map.addSource('user-pins', { 
+          type: 'geojson', 
+          data: geojson, 
+          cluster: true, 
+          clusterMaxZoom: 14, 
+          clusterRadius: 50 
+        });
+        console.log('UserPinLayer: Added user-pins source.');
+
+        map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
+        map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
+        map.addLayer({
+          id: 'open-camps',
+          type: 'circle',
+          source: 'user-pins',
+          filter: ['all', ['!has', 'point_count'], ['==', 'type', 'open_camp']],
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#ff6b35',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        map.addLayer({
+          id: 'gatherings',
+          type: 'circle',
+          source: 'user-pins',
+          filter: ['all', ['!has', 'point_count'], ['==', 'type', 'gathering']],
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#6b2d5c',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        map.addLayer({
+          id: 'quiet-places',
+          type: 'circle',
+          source: 'user-pins',
+          filter: ['all', ['!has', 'point_count'], ['==', 'type', 'quiet_place']],
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#2d5016',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        map.addLayer({
+          id: 'resources',
+          type: 'circle',
+          source: 'user-pins',
+          filter: ['all', ['!has', 'point_count'], ['==', 'type', 'resource']],
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#0066cc',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+        console.log('Map updated with new pins.');
+
+        // Add click listeners for each pin layer
+        pinLayers.forEach(layerId => {
+          map.on('click', layerId, (e) => {
+            handlePinClick(e, map);
+            e.originalEvent.stopPropagation(); // Stop propagation to prevent other map click handlers
+          });
+        });
+        
       } catch (err) {
         console.error('UserPinLayer: Unexpected error during RPC call:', err);
         return;
       }
-
-      // 3. Transform data into a valid GeoJSON FeatureCollection
-      const geojson = {
-        type: 'FeatureCollection',
-        features: pins.map(pin => ({
-          type: 'Feature',
-          geometry: pin.geojson,
-          properties: { id: pin.id, title: pin.title, type: pin.type, description: pin.description, creator: pin.creator_name, tags: JSON.stringify(pin.tags) }
-        }))
-      };
-      console.log('UserPinLayer: GeoJSON created:', geojson);
-
-      // 4. Add the source and all layers to the map
-      console.log('UserPinLayer: Map object before addSource:', map);
-      map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
-      console.log('UserPinLayer: Added user-pins source.');
-
-      map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
-      map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
-      map.addLayer({
-        id: 'open-camps',
-        type: 'circle',
-        source: 'user-pins',
-        filter: ['all', ['!has', 'point_count'], ['==', 'type', 'open_camp']],
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#ff6b35',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-
-      map.addLayer({
-        id: 'gatherings',
-        type: 'circle',
-        source: 'user-pins',
-        filter: ['all', ['!has', 'point_count'], ['==', 'type', 'gathering']],
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#6b2d5c',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-
-      map.addLayer({
-        id: 'quiet-places',
-        type: 'circle',
-        source: 'user-pins',
-        filter: ['all', ['!has', 'point_count'], ['==', 'type', 'quiet_place']],
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#2d5016',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-
-      map.addLayer({
-        id: 'resources',
-        type: 'circle',
-        source: 'user-pins',
-        filter: ['all', ['!has', 'point_count'], ['==', 'type', 'resource']],
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#0066cc',
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-      console.log('Map updated with new pins.');
-
-      // Add click listeners for each pin layer
-      pinLayers.forEach(layerId => {
-        map.on('click', layerId, (e) => {
-          handlePinClick(e, map);
-          e.originalEvent.stopPropagation(); // Stop propagation to prevent other map click handlers
-        });
-      });
     };
 
     const onLoad = () => {
