@@ -107,11 +107,14 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   }
 
   async function uploadAvatar(event) {
+    console.log('UserProfileModal: uploadAvatar called.');
     if (!event.target.files || event.target.files.length === 0) {
+      console.log('UserProfileModal: No file selected.');
       return;
     }
 
     const file = event.target.files[0];
+    console.log('UserProfileModal: File selected:', file);
     const fileExt = file.name.split('.').pop();
     const fileName = `${user.id}-${Math.random()}.${fileExt}`;
     const filePath = `${fileName}`;
@@ -120,6 +123,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
       setFileError('File size should be less than 1MB.');
       setAvatarFile(null);
       setAvatarPreview('');
+      console.warn('UserProfileModal: File size too large.');
       return;
     } else {
       setFileError('');
@@ -128,6 +132,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     setUploading(true);
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file)); // Show preview immediately
+    console.log('UserProfileModal: Starting avatar upload to path:', filePath);
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -135,6 +140,8 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
         cacheControl: '3600',
         upsert: true,
       });
+
+    console.log('UserProfileModal: Supabase storage upload completed. Error:', uploadError);
 
     if (uploadError) {
       console.error('Error uploading avatar:', uploadError);
@@ -145,6 +152,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
 
     setAvatarUrl(filePath); // Update avatar_url state with the new path
     setUploading(false);
+    console.log('UserProfileModal: Avatar uploaded successfully. FilePath:', filePath);
   }
 
   async function updateProfile(event) {
