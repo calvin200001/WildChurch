@@ -309,7 +309,7 @@ const LandingPage = ({ setShowAuthModal }) => {
                     <Headline>Wherever you roam, find the Church beneath the open sky.</Headline> {/* Refined headline */}
                     <Subtext>Find Spirit-led gatherings, prayer nights, and fellowship wherever your path leads.</Subtext> {/* Refined subtext */}
                     <div>
-                        <CTAButton href="#map">Explore the Map</CTAButton> {/* Updated CTA text */}
+                        <CTAButton href="/app">Explore the Map</CTAButton> {/* Updated CTA text */}
                         <SecondaryButton as="button" onClick={() => setShowAuthModal(true)}>Join the Movement</SecondaryButton> {/* Opens AuthModal */}
                     </div>
                 </HeroSection>
