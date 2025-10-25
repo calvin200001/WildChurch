@@ -28,11 +28,11 @@ function handlePinClick(e, map) {
 }
 
 export function UserPinLayer() {
-  const mapRef = useMap();
-  const map = mapRef.current?.getMap(); // Get the actual MapLibre instance
+  const { current: mapContainer } = useMap();
 
   // This is the single, controlling useEffect for this component's entire lifecycle.
   useEffect(() => {
+    const map = mapContainer?.getMap(); // Get it inside the effect
     if (!map) return;
 
     // Define all logic INSIDE the effect to avoid stale closures.
@@ -115,7 +115,7 @@ export function UserPinLayer() {
       map.off('load', onLoad);
       // Proper cleanup would remove sources and layers here, but this is often skipped if the map is permanent
     };
-  }, [map]); // This effect only re-runs if the map instance itself changes
+  }, [mapContainer]); // This effect only re-runs if the map instance itself changes
 
   return null;
 }
