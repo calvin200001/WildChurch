@@ -302,7 +302,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AuthRedirector user={user} />
+      <AuthRedirector user={user} profileLoading={profileLoading} />
       <ErrorBoundary>
         <Routes>
           <Route path="/" element={<LandingPage setShowAuthModal={setShowAuthModal} />} /> {/* Landing page at root */}
