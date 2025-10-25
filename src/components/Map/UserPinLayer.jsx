@@ -54,7 +54,21 @@ export function UserPinLayer() {
       try {
         console.log('UserPinLayer: About to call RPC...');
         
-        const { data: pins, error } = await supabase.rpc('get_pins_json'); // Changed name
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/get_pins_json`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: '{}'
+          }
+        );
+
+        const pins = await response.json();
+        const error = response.ok ? null : { message: 'Failed to fetch pins' };
         
         console.log('UserPinLayer: RPC RETURNED!');
         console.log('UserPinLayer: pins type:', typeof pins);
