@@ -12,6 +12,7 @@ export function MessageBoard({ user, profile, locationId }) {
   const messageInputRef = useRef(null); // Ref for MessageInput
 
   const handleAddCommentClick = () => {
+    console.log('messageInputRef.current:', messageInputRef.current);
     if (messageInputRef.current) {
       messageInputRef.current.focus();
     }
