@@ -12,7 +12,6 @@ export function MessageBoard({ user, profile, locationId }) {
   const messageInputRef = useRef(null); // Ref for MessageInput
 
   const handleAddCommentClick = () => {
-    console.log('messageInputRef.current:', messageInputRef.current);
     if (messageInputRef.current) {
       messageInputRef.current.focus();
     }
@@ -126,27 +125,24 @@ export function MessageBoard({ user, profile, locationId }) {
     return <div className="text-red-400 p-4">{error}</div>;
   }
 
-  if (comments.length === 0 && !loading) {
-    return (
-      <div className="p-4 text-gray-400 text-center">
-        {user ? (
-          <button
-            onClick={handleAddCommentClick}
-            className="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-400 transition-colors"
-          >
-            <Plus size={36} strokeWidth={1.5} />
-            <span className="mt-2 text-lg">Add the first comment</span>
-          </button>
-        ) : (
-          <p>No comments yet. Log in to share your thoughts!</p>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full bg-earth-900">
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
+        {comments.length === 0 && (
+          <div className="p-4 text-gray-400 text-center">
+            {user ? (
+              <button
+                onClick={handleAddCommentClick}
+                className="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-400 transition-colors"
+              >
+                <Plus size={36} strokeWidth={1.5} />
+                <span className="mt-2 text-lg">Add the first comment</span>
+              </button>
+            ) : (
+              <p>No comments yet. Log in to share your thoughts!</p>
+            )}
+          </div>
+        )}
         {comments.map((comment) => ( // Use comments state
           <div
             key={comment.id}
