@@ -48,10 +48,23 @@ export function UserPinLayer() {
       }
 
       // 2. Fetch data using the robust PostGIS function
-      console.log("Fetching pins using 'get_locations_geojson' RPC...");
+      console.log("UserPinLayer: Fetching pins using 'get_locations_geojson' RPC...");
       const { data: pins, error } = await supabase.rpc('get_locations_geojson');
-      if (error) { console.error('Error fetching pins via RPC:', error); return; }
-      if (!pins) { console.warn('RPC function returned no pins.', pins); return; }
+      if (error) {
+        console.error('UserPinLayer: Error fetching pins via RPC:', error);
+        return;
+      }
+      if (!pins || pins.length === 0) {
+        console.warn('UserPinLayer: RPC function returned no pins or empty array.', pins);
+        // Ensure existing layers/sources are removed even if no pins are returned
+        if (map.getSource('user-pins')) {
+          const layersToRemove = ['clusters', 'cluster-count', 'open-camps', 'gatherings', 'quiet-places', 'resources'];
+          layersToRemove.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
+          map.removeSource('user-pins');
+        }
+        return;
+      }
+      console.log('UserPinLayer: Pins data received:', pins);
 
       // 3. Transform data into a valid GeoJSON FeatureCollection
       const geojson = {
@@ -62,10 +75,13 @@ export function UserPinLayer() {
           properties: { id: pin.id, title: pin.title, type: pin.type, description: pin.description, creator: pin.creator_name, tags: JSON.stringify(pin.tags) }
         }))
       };
+      console.log('UserPinLayer: GeoJSON created:', geojson);
 
       // 4. Add the source and all layers to the map
-      console.log('Map object before addSource:', map);
+      console.log('UserPinLayer: Map object before addSource:', map);
       map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
+      console.log('UserPinLayer: Added user-pins source.');
+
       map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
       map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
       map.addLayer({
