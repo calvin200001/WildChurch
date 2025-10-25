@@ -19,6 +19,7 @@ import { MapControls } from './components/Map/MapControls';
 import { UserSearch } from './components/UserSearch'; // New import
 import { MessagingPage } from './components/Messages/MessagingPage'; // New import
 import { ErrorBoundary } from './components/ErrorBoundary';
+import LandingPage from './components/LandingPage'; // New import for LandingPage
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
@@ -302,7 +303,8 @@ function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
-          <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} profileLoading={profileLoading} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} showUserProfileModal={showUserProfileModal} setShowUserProfileModal={setShowUserProfileModal} />} />
+          <Route path="/" element={<LandingPage />} /> {/* Landing page at root */}
+          <Route path="/app" element={<AppContent user={user} setUser={setUser} profile={profile} profileLoading={profileLoading} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} showUserProfileModal={showUserProfileModal} setShowUserProfileModal={setShowUserProfileModal} />} /> {/* Main app at /app */}
           <Route path="/proposals" element={
             <>
               <Seo

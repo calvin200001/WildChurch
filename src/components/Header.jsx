@@ -33,7 +33,7 @@ export function Header({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
+          <Link to="/app" className="flex items-center space-x-2 group">
             <MapPin className="text-forest-500 h-8 w-8 group-hover:text-forest-400 group-hover:scale-110 transition-all duration-300" />
             <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-earth-50 via-forest-300 to-forest-500 bg-clip-text text-transparent group-hover:from-forest-300 group-hover:to-forest-600 transition-all duration-300">
               WildChurch
@@ -43,7 +43,7 @@ export function Header({
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
-              to="/" 
+              to="/app" 
               className="text-earth-200 hover:text-forest-400 transition-all duration-200 font-medium relative group py-1"
             >
               <span>Map</span>
