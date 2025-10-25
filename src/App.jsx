@@ -15,6 +15,7 @@ import { Header } from './components/Header';
 import { MapEmptyState } from './components/MapEmptyState';
 import { MapControls } from './components/Map/MapControls';
 import { UserSearch } from './components/UserSearch'; // New import
+import { MessagingPage } from './components/Messages/MessagingPage'; // New import
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
@@ -220,31 +221,15 @@ function App() {
               onShowUserProfile={() => setShowUserProfileModal(true)}
             />
             <div className="pt-16"> {/* Offset for fixed header */}
-              <UserSearch />
+              <UserSearch user={user} />
             </div>
           </>
         } />
-        <Route path="/messages" element={ // New route for messaging placeholder
-          <>
-            <Seo
-              title="WildChurch - Messages"
-              description="Your private conversations with other WildChurch members."
-              name="WildChurch"
-              type="website"
-              canonicalUrl={`${baseUrl}/messages`}
-            />
-            <Header
-              user={user}
-              onLogout={handleLogout}
-              onShowAuth={() => setShowAuthModal(true)}
-              onShowUserProfile={() => setShowUserProfileModal(true)}
-            />
-            <div className="pt-16 p-4 text-white text-center">
-              <h2 className="text-3xl font-bold mb-4">Messages</h2>
-              <p className="text-lg">Messaging system coming soon!</p>
-              <p className="text-gray-400">You can find other users via the "Find Users" link.</p>
-            </div>
-          </>
+        <Route path="/messages" element={ // Main messages page
+          <MessagingPage user={user} profile={profile} />
+        } />
+        <Route path="/messages/:conversationId" element={ // Specific conversation view
+          <MessagingPage user={user} profile={profile} />
         } />
       </Routes>
     </BrowserRouter>

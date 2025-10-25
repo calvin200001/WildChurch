@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // New import
 import { supabase } from '../lib/supabase'; // Adjust path as needed
-import LoadingSpinner from './LoadingSpinner'; // Assuming a LoadingSpinner component exists
+import { LoadingSpinner } from './LoadingSpinner'; // Assuming a LoadingSpinner component exists
+import { MessageSquare } from 'lucide-react'; // New import for message icon
 
-export function UserSearch() {
+export function UserSearch({ user }) { // Accept user prop
   const [searchTerm, setSearchTerm] = useState('');
   const [searchState, setSearchState] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -32,6 +34,28 @@ export function UserSearch() {
       setError('Failed to search profiles. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const navigate = useNavigate(); // Initialize navigate
+
+  const handleMessageUser = async (targetUserId) => {
+    if (!user || !targetUserId) return;
+
+    try {
+      const { data: conversationId, error } = await supabase.rpc('create_or_get_conversation', {
+        p_user_id1: user.id,
+        p_user_id2: targetUserId,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      navigate(`/messages/${conversationId}`);
+    } catch (err) {
+      console.error('Error creating or getting conversation:', err);
+      setError('Failed to start conversation.');
     }
   };
 
@@ -105,6 +129,15 @@ export function UserSearch() {
                     <p className="text-xs text-gray-500">Beliefs: {profile.beliefs.join(', ')}</p>
                   )}
                 </div>
+                {user && user.id !== profile.id && ( // Only show message button if logged in and not self
+                  <button
+                    onClick={() => handleMessageUser(profile.id)}
+                    className="ml-auto px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1 text-sm"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Message</span>
+                  </button>
+                )
               </li>
             ))}
           </ul>
