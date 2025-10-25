@@ -1,20 +1,21 @@
 import { Plus, Minus, Maximize2, Navigation } from 'lucide-react';
 import { useMap } from 'react-map-gl';
+import maplibregl from 'maplibre-gl'; // ADD THIS
 
 export function MapControls() {
   const { current: map } = useMap();
 
   const handleZoomIn = () => {
-    if (map) map.zoomIn();
+    if (map) map.getMap().zoomIn();
   };
 
   const handleZoomOut = () => {
-    if (map) map.zoomOut();
+    if (map) map.getMap().zoomOut();
   };
 
   const handleRecenter = () => {
     if (map) {
-      map.flyTo({
+      map.getMap().flyTo({
         center: [-105, 40],
         zoom: 6,
         essential: true
@@ -23,15 +24,15 @@ export function MapControls() {
   };
 
   const handleFitBounds = () => {
-    if (map) {
-      // Get all visible pins and fit to their bounds
-      const source = map.getSource('user-pins');
+    const mapInstance = map?.getMap();
+    if (mapInstance) {
+      const source = mapInstance.getSource('user-pins');
       if (source && source._data && source._data.features.length > 0) {
         const bounds = source._data.features.reduce((bounds, feature) => {
           return bounds.extend(feature.geometry.coordinates);
         }, new maplibregl.LngLatBounds());
         
-        map.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        mapInstance.fitBounds(bounds, { padding: 50, maxZoom: 14 });
       }
     }
   };

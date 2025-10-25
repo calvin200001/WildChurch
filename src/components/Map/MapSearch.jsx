@@ -1,5 +1,5 @@
 import { Search, Filter } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function MapSearch({ onSearch, onFilter }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +9,17 @@ export function MapSearch({ onSearch, onFilter }) {
     tags: [],
     radius: 50
   });
+
+  // Debounced search - trigger search after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onSearch) {
+        onSearch(searchTerm);
+      }
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, onSearch]);
 
   return (
     <div className="absolute top-20 left-4 right-4 md:left-auto md:w-96 z-10">
@@ -80,7 +91,11 @@ export function MapSearch({ onSearch, onFilter }) {
             </div>
 
             <button
-              onClick={() => onFilter(filters)}
+              onClick={() => {
+                if (onFilter) {
+                  onFilter(filters);
+                }
+              }}
               className="btn-primary w-full text-sm"
             >
               Apply Filters
