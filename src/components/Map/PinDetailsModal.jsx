@@ -16,22 +16,36 @@ export function PinDetailsModal({ isOpen, onClose, pinId }) {
     const fetchPinDetails = async () => {
       setLoading(true);
       setError(null);
+      console.log('PinDetailsModal: Fetching details for pinId:', pinId);
       try {
         const { data, error } = await supabase
           .from('locations')
-          .select('*')
+          .select(`
+            *,
+            profiles(username, avatar_url)
+          `)
           .eq('id', pinId)
           .single();
+
+        console.log('PinDetailsModal: Supabase query data:', data, 'error:', error);
 
         if (error) {
           throw error;
         }
+        if (!data) {
+          setError('Pin not found.');
+          setPinDetails(null);
+          return;
+        }
         setPinDetails(data);
+        console.log('PinDetailsModal: Successfully set pin details:', data);
       } catch (err) {
-        console.error('Error fetching pin details:', err);
+        console.error('PinDetailsModal: Error fetching pin details:', err);
         setError('Failed to load pin details.');
+        setPinDetails(null);
       } finally {
         setLoading(false);
+        console.log('PinDetailsModal: Loading finished. Loading state:', false);
       }
     };
 

@@ -12,13 +12,16 @@ export function ConversationList({ user, profile, onSelectConversation }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('ConversationList: useEffect triggered. User:', user);
     if (!user) {
+      console.log('ConversationList: No user, clearing conversations and setting loading to false.');
       setConversations([]);
       setLoading(false);
       return;
     }
 
     const fetchConversations = async () => {
+      console.log('ConversationList: fetchConversations called.');
       setLoading(true);
       setError(null);
       
@@ -29,9 +32,12 @@ export function ConversationList({ user, profile, onSelectConversation }) {
           .select('conversation_id')
           .eq('user_id', user.id);
 
+        console.log('ConversationList: participantData:', participantData, 'participantError:', participantError);
+
         if (participantError) throw participantError;
         
         if (!participantData || participantData.length === 0) {
+          console.log('ConversationList: No participant data found.');
           setConversations([]);
           setLoading(false);
           return;
@@ -44,6 +50,8 @@ export function ConversationList({ user, profile, onSelectConversation }) {
           .from('conversations')
           .select('*')
           .in('id', conversationIds);
+
+        console.log('ConversationList: convData:', convData, 'convError:', convError);
 
         if (convError) throw convError;
 
@@ -83,12 +91,14 @@ export function ConversationList({ user, profile, onSelectConversation }) {
           .sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at));
 
         setConversations(validConversations);
+        console.log('ConversationList: Fetched and set', validConversations.length, 'conversations.');
       } catch (err) {
         console.error('Error fetching conversations:', err);
         setError('Failed to load conversations.');
         setConversations([]);
       } finally {
         setLoading(false);
+        console.log('ConversationList: fetchConversations finished. Loading:', false);
       }
     };
 
@@ -115,6 +125,8 @@ export function ConversationList({ user, profile, onSelectConversation }) {
       subscription.unsubscribe();
     };
   }, [user?.id]); // Only depend on user.id, not the whole user object
+
+  console.log('ConversationList: Rendering. Loading:', loading, 'Error:', error, 'Conversations count:', conversations.length);
 
   if (loading) {
     return (

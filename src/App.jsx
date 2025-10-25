@@ -20,12 +20,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
-function AppContent({ user, setUser, profile, profileLoading, getProfile, handleLogout, showAuthModal, setShowAuthModal }) { // Accept user, profile, and auth modal props
+function AppContent({ user, setUser, profile, profileLoading, getProfile, handleLogout, showAuthModal, setShowAuthModal, showUserProfileModal, setShowUserProfileModal }) { // Accept user, profile, and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
   const [showPinDetailsModal, setShowPinDetailsModal] = useState(false); // New state for pin details modal
   const [selectedPinId, setSelectedPinId] = useState(null); // New state for selected pin ID
-  const [showUserProfileModal, setShowUserProfileModal] = useState(false); // New state for user profile modal
   const location = useLocation(); // Get current location for canonical URL
 
   console.log('User:', user); // Debugging: Check user state
@@ -136,8 +135,9 @@ function AppContent({ user, setUser, profile, profileLoading, getProfile, handle
 function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(true); // New state
+  const [profileLoading, setProfileLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false); // Moved here
 
   const getProfile = async (userId) => {
     if (!userId) {
@@ -264,7 +264,7 @@ function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
-          <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} profileLoading={profileLoading} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
+          <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} profileLoading={profileLoading} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} showUserProfileModal={showUserProfileModal} setShowUserProfileModal={setShowUserProfileModal} />} />
           <Route path="/proposals" element={
             <>
               <Seo
