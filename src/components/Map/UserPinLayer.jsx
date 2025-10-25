@@ -62,7 +62,7 @@ export function UserPinLayer({ searchQuery = '' }) {
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
               'Prefer': 'return=representation'
             },
-            body: JSON.stringify({ search: searchQuery }),
+            body: JSON.stringify({ search: searchQuery || null }),
             cache: 'no-store'
           }
         );
