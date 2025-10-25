@@ -27,8 +27,8 @@ export default {
           300: '#8fb88f',
           400: '#6a9d6a',
           500: '#4a7c4a',  // Deep forest green
-          600: '#3d5f3d',
-          700: '#2d5016',  // Primary brand green
+          600: '#3d6e3d',  // Balanced mid-green
+          700: '#2d5016',  // Primary brand green (olive)
           800: '#1f3810',
           900: '#14260b',
         },
@@ -56,12 +56,26 @@ export default {
       },
       animation: {
         'slide-up': 'slideUp 0.3s ease-out',
+        'fade-in': 'fadeIn 0.2s ease-out',
+        'scale-in': 'scaleIn 0.2s ease-out',
       },
       keyframes: {
         slideUp: {
           '0%': { transform: 'translateY(100%)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
         }
+      },
+      boxShadow: {
+        'earth': '0 4px 6px -1px rgba(42, 38, 33, 0.3), 0 2px 4px -1px rgba(42, 38, 33, 0.2)',
+        'forest': '0 4px 6px -1px rgba(45, 80, 22, 0.3), 0 2px 4px -1px rgba(45, 80, 22, 0.2)',
       }
     },
   },

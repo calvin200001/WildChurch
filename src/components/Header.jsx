@@ -2,12 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, MapPin, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 
-import { supabase } from '../lib/supabase'; // Import supabase to get public URL for avatar
+import { supabase } from '../lib/supabase';
 
 export function Header({
   user,
   profile,
-  profileLoading, // Add this prop
+  profileLoading,
   onLogout,
   onShowAuth,
   onShowUserProfile
@@ -15,19 +15,18 @@ export function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Show loading state while profile is fetching
   const displayName = profileLoading
     ? 'Loading...'
     : profile?.first_name || profile?.username || user?.email || 'User';
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-20 bg-earth-900/95 backdrop-blur-sm border-b border-earth-700">
+    <header className="absolute top-0 left-0 right-0 z-20 bg-earth-900/90 backdrop-blur-md border-b border-earth-700/50 shadow-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <MapPin className="text-forest-500 h-8 w-8" />
-            <h1 className="text-2xl font-display font-bold text-earth-50">
+          <div className="flex items-center space-x-2 group">
+            <MapPin className="text-forest-500 h-8 w-8 group-hover:scale-110 transition-transform duration-200" />
+            <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-earth-50 to-forest-300 bg-clip-text text-transparent">
               WildChurch
             </h1>
           </div>
@@ -36,46 +35,49 @@ export function Header({
           <nav className="hidden md:flex items-center space-x-6">
             <Link 
               to="/" 
-              className="text-earth-200 hover:text-forest-500 transition-colors font-medium"
+              className="text-earth-200 hover:text-forest-400 transition-all duration-200 font-medium relative group"
             >
-              Map
+              <span>Map</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-forest-500 group-hover:w-full transition-all duration-200"></span>
             </Link>
             <Link 
               to="/proposals" 
-              className="text-earth-200 hover:text-forest-500 transition-colors font-medium"
+              className="text-earth-200 hover:text-forest-400 transition-all duration-200 font-medium relative group"
             >
-              Proposals
+              <span>Proposals</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-forest-500 group-hover:w-full transition-all duration-200"></span>
             </Link>
             <Link 
               to="/users" 
-              className="text-earth-200 hover:text-forest-500 transition-colors font-medium"
+              className="text-earth-200 hover:text-forest-400 transition-all duration-200 font-medium relative group"
             >
-              Find Users
+              <span>Find Users</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-forest-500 group-hover:w-full transition-all duration-200"></span>
             </Link>
             <Link 
               to="/messages" 
-              className="text-earth-200 hover:text-forest-500 transition-colors font-medium"
+              className="text-earth-200 hover:text-forest-400 transition-all duration-200 font-medium relative group"
             >
-              Messages
+              <span>Messages</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-forest-500 group-hover:w-full transition-all duration-200"></span>
             </Link>
             
             {user ? (
               <div className="flex items-center space-x-4">
                 {profileLoading ? (
-                  <div className="w-8 h-8 rounded-full bg-earth-700 animate-pulse" />
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-earth-700 to-earth-600 animate-pulse shadow-lg" />
                 ) : profile?.avatar_url ? (
                   <img
                     src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
                     alt="Avatar"
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-forest-600/50 hover:ring-forest-500 transition-all duration-200 shadow-lg"
                     onError={(e) => {
-                      // Fallback if image fails to load
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
                 ) : null}
-                <User className="h-8 w-8 text-earth-300" style={{ display: profile?.avatar_url ? 'none' : 'block' }} />
+                <User className="h-10 w-10 text-earth-300 p-2 bg-earth-700 rounded-full ring-2 ring-earth-600/50" style={{ display: profile?.avatar_url ? 'none' : 'block' }} />
                 <span className="text-earth-300 text-sm">{displayName}</span>
                 <button
                   onClick={onShowUserProfile}
