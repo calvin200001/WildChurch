@@ -65,10 +65,10 @@ export function UserPinLayer() {
       map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
       map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
       map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
-      map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', ['get', 'type'], 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
-      map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', ['get', 'type'], 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
-      map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', ['get', 'type'], 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
-      map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', ['get', 'type'], 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+      map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', 'type', 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+      map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', 'type', 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+      map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', 'type', 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+      map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!has', 'point_count'], ['==', 'type', 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
       console.log('Map updated with new pins.');
     };
 
