@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, MapPin, User, LogOut } from 'lucide-react';
 import { useState } from 'react';
 
-export function Header({ user, onLogout, onShowAuth }) {
+export function Header({ user, onLogout, onShowAuth, onShowUserProfile }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -38,6 +38,13 @@ export function Header({ user, onLogout, onShowAuth }) {
                 <span className="text-earth-300 text-sm">
                   {user.email}
                 </span>
+                <button
+                  onClick={onShowUserProfile}
+                  className="flex items-center space-x-2 btn-secondary text-sm"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </button>
                 <button
                   onClick={onLogout}
                   className="flex items-center space-x-2 btn-danger text-sm"
@@ -91,12 +98,23 @@ export function Header({ user, onLogout, onShowAuth }) {
                   </span>
                   <button
                     onClick={() => {
+                      onShowUserProfile();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="btn-secondary text-sm justify-start"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    <span>Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
                       onLogout();
                       setMobileMenuOpen(false);
                     }}
                     className="btn-danger text-sm justify-start"
                   >
-                    Log Out
+                    <LogOut className="h-4 w-4 mr-2" />
+                    <span>Log Out</span>
                   </button>
                 </>
               ) : (

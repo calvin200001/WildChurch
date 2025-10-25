@@ -8,6 +8,7 @@ import { DropPinModal } from './components/Map/DropPinModal';
 import { PinDetailsModal } from './components/Map/PinDetailsModal'; // New import
 import { GatheringsBoard } from './components/GatheringsBoard';
 import AuthModal from './components/Auth/AuthModal';
+import { UserProfileModal } from './components/Auth/UserProfileModal'; // New import
 import Seo from './components/Seo';
 import { supabase } from './lib/supabase';
 import { Header } from './components/Header';
@@ -21,6 +22,7 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
   const [pinLocation, setPinLocation] = useState(null);
   const [showPinDetailsModal, setShowPinDetailsModal] = useState(false); // New state for pin details modal
   const [selectedPinId, setSelectedPinId] = useState(null); // New state for selected pin ID
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false); // New state for user profile modal
   const location = useLocation(); // Get current location for canonical URL
 
   console.log('User:', user); // Debugging: Check user state
@@ -83,6 +85,7 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
         user={user}
         onLogout={handleLogout}
         onShowAuth={() => setShowAuthModal(true)}
+        onShowUserProfile={() => setShowUserProfileModal(true)} // New prop
       />
       <Map
         mapLib={maplibregl}
@@ -119,6 +122,14 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
           isOpen={showPinDetailsModal}
           pinId={selectedPinId}
           onClose={() => setShowPinDetailsModal(false)}
+        />
+      )}
+      {user && ( // Only show if user is logged in
+        <UserProfileModal
+          isOpen={showUserProfileModal}
+          onClose={() => setShowUserProfileModal(false)}
+          user={user}
+          onUpdateProfile={() => { /* Potentially refresh user data */ }}
         />
       )}
     </div>
