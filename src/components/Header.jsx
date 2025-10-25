@@ -20,7 +20,11 @@ export function Header({
     : profile?.first_name || profile?.username || user?.email?.split('@')[0] || 'User';
 
   const getAvatarUrl = () => {
-    if (!profile?.avatar_url) return null;
+    if (!profile?.avatar_url) {
+      console.log('Header: profile.avatar_url is null or undefined');
+      return null;
+    }
+    console.log('Header: profile.avatar_url:', profile.avatar_url);
     return supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl;
   };
 

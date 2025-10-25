@@ -113,6 +113,7 @@ export function UserSearch({ user }) { // Accept user prop
                 <div className="flex items-center w-full"> {/* Use w-full to ensure it takes full width */}
                   <div className="flex items-center space-x-3 flex-grow">
                     <Avatar url={profile.avatar_url} className="w-10 h-10 rounded-full object-cover" />
+                    {console.log('UserSearch: profile.avatar_url for', profile.username, ':', profile.avatar_url)}
                     <div>
                       <p className="font-medium">{profile.username || 'Anonymous'}</p>
                       {profile.state && <p className="text-sm text-gray-400">{profile.state}</p>}
