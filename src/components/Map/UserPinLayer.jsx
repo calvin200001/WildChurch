@@ -7,7 +7,8 @@ import maplibregl from 'maplibre-gl';
 function handlePinClick(e, map) {
   const pin = e.features[0];
   const coordinates = pin.geometry.coordinates.slice();
-  const { title, description, type, creator, tags, id } = pin.properties;
+  const { title, description, type, creator, tags: tagsString, id } = pin.properties;
+  const tags = tagsString ? JSON.parse(tagsString) : []; // Parse tags back to array
   
   while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
@@ -21,6 +22,7 @@ function handlePinClick(e, map) {
       <div class="bg-earth-800 rounded-lg p-4">
         <h3>${typeEmoji[type] || ''} ${title}</h3>
         <p>${description || 'No description provided.'}</p>
+        ${tags.length > 0 ? `<p><small>Tags: ${tags.join(', ')}</small></p>` : ''}
         <p><small>Posted by ${creator || 'Anonymous'}</small></p>
         <button onclick="window.viewPinDetails('${id}')">View Details</button>
       </div>
