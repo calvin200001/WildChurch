@@ -96,7 +96,17 @@ export function UserPinLayer() {
     }
     
     // Set up real-time listener
-    const subscription = supabase.channel('map-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, loadPinsAndLayers).subscribe();
+    const subscription = supabase
+      .channel('map-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'locations' }, 
+        () => {
+          if (map && map.isStyleLoaded()) {
+            loadPinsAndLayers();
+          }
+        }
+      )
+      .subscribe();
 
     // Return a cleanup function
     return () => {
