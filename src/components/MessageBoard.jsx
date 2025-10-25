@@ -104,8 +104,8 @@ export function MessageBoard({ user, profile, locationId }) {
   const handleSendMessage = async (content) => {
     if (!user || !locationId || !content) return; // Use locationId
 
-    const { error } = await supabase.from('pin_comments').insert({ // Changed table
-      pin_id: locationId, // Changed to pin_id
+    const { error } = await supabase.from('pin_comments').insert({
+      location_id: locationId, // Changed to location_id
       user_id: user.id, // Changed to user_id
       content: content,
     });
