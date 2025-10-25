@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import { MAP_CONFIG } from './lib/mapConfig';
 import { UserPinLayer } from './components/Map/UserPinLayer';
 import { DropPinModal } from './components/Map/DropPinModal';
+import { PinDetailsModal } from './components/Map/PinDetailsModal'; // New import
 import { GatheringsBoard } from './components/GatheringsBoard';
 import AuthModal from './components/Auth/AuthModal';
 import Seo from './components/Seo';
@@ -18,6 +19,8 @@ const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical link
 function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Accept user and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
+  const [showPinDetailsModal, setShowPinDetailsModal] = useState(false); // New state for pin details modal
+  const [selectedPinId, setSelectedPinId] = useState(null); // New state for selected pin ID
   const location = useLocation(); // Get current location for canonical URL
 
   console.log('User:', user); // Debugging: Check user state
@@ -63,7 +66,8 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
 
   // Define viewPinDetails on the window object so the popup can call it
   window.viewPinDetails = (pinId) => {
-    alert(`Viewing details for pin: ${pinId}`);
+    setSelectedPinId(pinId);
+    setShowPinDetailsModal(true);
   };
 
   return (
@@ -110,6 +114,13 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
       )}
       {!user && <MapEmptyState />}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      {showPinDetailsModal && ( // Conditional rendering for PinDetailsModal
+        <PinDetailsModal
+          isOpen={showPinDetailsModal}
+          pinId={selectedPinId}
+          onClose={() => setShowPinDetailsModal(false)}
+        />
+      )}
     </div>
   );
 }
