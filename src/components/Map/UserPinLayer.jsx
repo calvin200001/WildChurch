@@ -49,6 +49,8 @@ export function UserPinLayer({ searchQuery = '' }) {
 
       // 2. Fetch pins from RPC
       console.log('UserPinLayer: Fetching pins...');
+      console.log('UserPinLayer: URL:', `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/get_pins_json`);
+      console.log('UserPinLayer: Search query:', searchQuery);
       try {
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/get_pins_json`,
@@ -57,9 +59,11 @@ export function UserPinLayer({ searchQuery = '' }) {
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Prefer': 'return=representation'
             },
-            body: JSON.stringify({ search: searchQuery })
+            body: JSON.stringify({ search: searchQuery }),
+            cache: 'no-store'
           }
         );
 
