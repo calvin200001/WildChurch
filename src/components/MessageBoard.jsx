@@ -70,7 +70,7 @@ export function MessageBoard({ user, profile, locationId }) {
           event: 'INSERT',
           schema: 'public',
           table: 'pin_comments', // Changed table
-          filter: `pin_id=eq.${locationId}` // Changed filter
+          filter: `location_id=eq.${locationId}` // Changed filter
         },
         (payload) => {
           // Fetch sender profile for the new comment
