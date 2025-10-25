@@ -12,6 +12,8 @@ import { UserProfileModal } from './components/Auth/UserProfileModal'; // New im
 import Seo from './components/Seo';
 import { supabase } from './lib/supabase';
 import { Header } from './components/Header';
+import { Toast } from './components/Toast';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { MapEmptyState } from './components/MapEmptyState';
 import { MapControls } from './components/Map/MapControls';
 import { UserSearch } from './components/UserSearch'; // New import
@@ -141,6 +143,39 @@ function App() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false); // Moved here
+
+  const [showReloadPrompt, setShowReloadPrompt] = useState(false);
+  const [offlineReady, setOfflineReady] = useState(false);
+
+  const { 
+    offlineReady: swOfflineReady,
+    needRefresh: swNeedRefresh,
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log(`SW Registered: ${r}`);
+    },
+    onRegisterError(error) {
+      console.error('SW registration error', error);
+    },
+    onOfflineReady() {
+      setOfflineReady(true);
+      console.log('PWA: App is ready to work offline');
+    },
+    onNeedRefresh() {
+      setShowReloadPrompt(true);
+      console.log('PWA: New content available, click to reload');
+    },
+  });
+
+  const closeReloadPrompt = () => {
+    setShowReloadPrompt(false);
+  };
+
+  const refreshApp = () => {
+    updateServiceWorker(true);
+    window.location.reload();
+  };
 
   const getProfile = async (userId) => {
     if (!userId) {
@@ -339,6 +374,24 @@ function App() {
             </>
           } />
         </Routes>
+        {showReloadPrompt && (
+          <Toast
+            message={
+              <div className="flex flex-col items-start">
+                <p className="mb-2">New content available, click on reload button to update.</p>
+                <button
+                  onClick={refreshApp}
+                  className="px-3 py-1 bg-forest-600 text-white rounded-md hover:bg-forest-700 transition-colors duration-200"
+                >
+                  Reload
+                </button>
+              </div>
+            }
+            type="info"
+            onClose={closeReloadPrompt}
+            duration={0} // Keep open until user acts
+          />
+        )}
       </ErrorBoundary>
     </BrowserRouter>
   );
