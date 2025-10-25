@@ -26,23 +26,23 @@ function AppContent({ user, setUser, showAuthModal, setShowAuthModal }) { // Acc
   const handleMapClick = (e) => {
     console.log('Map clicked', e);
     
-    // IMPORTANT: Check if we clicked on a map layer/feature
-    // Only query if the map is loaded and layers exist
-    if (e.target && e.target.isStyleLoaded && e.target.isStyleLoaded()) {
-      try {
-        const features = e.target.queryRenderedFeatures(e.point, {
-          layers: ['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters']
+    // Defensively check if an existing feature was clicked
+    const layerIds = ['open-camps', 'gatherings', 'quiet-places', 'resources', 'clusters'];
+    const map = e.target; // Get a reference to the map instance
+
+    // First, check if the layers actually exist before querying them
+    const existingLayers = layerIds.filter(id => map.getLayer(id));
+
+    if (existingLayers.length > 0) {
+        const features = map.queryRenderedFeatures(e.point, {
+            layers: existingLayers
         });
         
         if (features.length > 0) {
-          // Clicked on an existing pin/cluster, don't open modal
-          console.log('Clicked on feature, not opening modal');
-          return;
+            // Clicked on an existing, visible pin/cluster. Do nothing.
+            console.log('Clicked on a feature, aborting modal open.');
+            return;
         }
-      } catch (error) {
-        // Layers don't exist yet, that's OK - continue to open modal
-        console.log('Layers not ready yet, opening modal anyway');
-      }
     }
     
     // Clicked on empty map - open modal
