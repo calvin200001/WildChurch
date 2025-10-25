@@ -102,7 +102,8 @@ export function UserPinLayer() {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'locations' }, 
         () => {
-          if (map && map.isStyleLoaded()) {
+          if (map && map.isStyleLoaded() && map.hasImage('campfire-icon')) {
+            // Only reload if icons are already loaded
             loadPinsAndLayers();
           }
         }
