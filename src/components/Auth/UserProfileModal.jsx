@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase'; // Adjust path as needed
-import LoadingSpinner from '../LoadingSpinner'; // Assuming a LoadingSpinner component exists
+import { LoadingSpinner } from '../LoadingSpinner'; // Assuming a LoadingSpinner component exists
 
 export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   const [loading, setLoading] = useState(true);
