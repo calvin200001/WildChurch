@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 
-export function MessageInput({ onSendMessage, disabled }) {
+export const MessageInput = forwardRef(({ onSendMessage, disabled }, ref) => {
   const [message, setMessage] = useState('');
 
   const handleSubmit = (e) => {
@@ -20,6 +20,7 @@ export function MessageInput({ onSendMessage, disabled }) {
         placeholder="Type your message..."
         className="flex-grow rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"
         disabled={disabled}
+        ref={ref}
       />
       <button
         type="submit"
@@ -30,4 +31,4 @@ export function MessageInput({ onSendMessage, disabled }) {
       </button>
     </form>
   );
-}
+});

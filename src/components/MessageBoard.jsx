@@ -2,13 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { MessageInput } from './Messages/MessageInput';
 import { LoadingSpinner } from './LoadingSpinner';
-import { User } from 'lucide-react'; // For default avatar
+import { User, Plus } from 'lucide-react'; // For default avatar and plus icon
 
-export function MessageBoard({ user, profile, locationId }) { // Renamed component and added locationId prop
-  const [comments, setComments] = useState([]); // Renamed state for clarity
+export function MessageBoard({ user, profile, locationId }) {
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const commentsEndRef = useRef(null); // Renamed ref for clarity
+  const commentsEndRef = useRef(null);
+  const messageInputRef = useRef(null); // Ref for MessageInput
+
+  const handleAddCommentClick = () => {
+    if (messageInputRef.current) {
+      messageInputRef.current.focus();
+    }
+  };
 
   const scrollToBottom = () => {
     commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -118,10 +125,20 @@ export function MessageBoard({ user, profile, locationId }) { // Renamed compone
     return <div className="text-red-400 p-4">{error}</div>;
   }
 
-  if (comments.length === 0 && !loading) { // Use comments state
+  if (comments.length === 0 && !loading) {
     return (
       <div className="p-4 text-gray-400 text-center">
-        No comments yet. Be the first to share your thoughts!
+        {user ? (
+          <button
+            onClick={handleAddCommentClick}
+            className="flex flex-col items-center justify-center text-gray-500 hover:text-indigo-400 transition-colors"
+          >
+            <Plus size={36} strokeWidth={1.5} />
+            <span className="mt-2 text-lg">Add the first comment</span>
+          </button>
+        ) : (
+          <p>No comments yet. Log in to share your thoughts!</p>
+        )}
       </div>
     );
   }
@@ -185,7 +202,11 @@ export function MessageBoard({ user, profile, locationId }) { // Renamed compone
         ))}
         <div ref={commentsEndRef} />
       </div>
-      <MessageInput onSendMessage={handleSendMessage} disabled={!user} />
+      <MessageInput
+        onSendMessage={handleSendMessage}
+        disabled={!user}
+        ref={messageInputRef}
+      />
     </div>
   );
 }
