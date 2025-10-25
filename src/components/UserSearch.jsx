@@ -108,36 +108,41 @@ export function UserSearch({ user }) { // Accept user prop
           <ul className="space-y-3">
             {searchResults.map((profile) => (
               <li key={profile.id} className="bg-earth-700 p-3 rounded-md flex items-center space-x-3">
-                {profile.avatar_url ? (
-                  <img
-                    src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-gray-400">
-                    <User className="h-5 w-5" />
+                {/* Wrap all content inside <li> with a single div */}
+                <div className="flex items-center w-full"> {/* Use w-full to ensure it takes full width */}
+                  <div className="flex items-center space-x-3 flex-grow">
+                    {profile.avatar_url ? (
+                      <img
+                        src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
+                        alt="Avatar"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-gray-400">
+                        <User className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium">{profile.username || 'Anonymous'}</p>
+                      {profile.state && <p className="text-sm text-gray-400">{profile.state}</p>}
+                      {profile.interests && profile.interests.length > 0 && (
+                        <p className="text-xs text-gray-500">Interests: {profile.interests.join(', ')}</p>
+                      )}
+                      {profile.beliefs && profile.beliefs.length > 0 && (
+                        <p className="text-xs text-gray-500">Beliefs: {profile.beliefs.join(', ')}</p>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div>
-                  <p className="font-medium">{profile.username || 'Anonymous'}</p>
-                  {profile.state && <p className="text-sm text-gray-400">{profile.state}</p>}
-                  {profile.interests && profile.interests.length > 0 && (
-                    <p className="text-xs text-gray-500">Interests: {profile.interests.join(', ')}</p>
-                  )}
-                  {profile.beliefs && profile.beliefs.length > 0 && (
-                    <p className="text-xs text-gray-500">Beliefs: {profile.beliefs.join(', ')}</p>
+                  {user && user.id !== profile.id && ( // Only show message button if logged in and not self
+                    <button
+                      onClick={() => handleMessageUser(profile.id)}
+                      className="ml-auto px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1 text-sm"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Message</span>
+                    </button>
                   )}
                 </div>
-                {user && user.id !== profile.id && ( // Only show message button if logged in and not self
-                  <button
-                    onClick={() => handleMessageUser(profile.id)}
-                    className="ml-auto px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1 text-sm"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Message</span>
-                  </button>
-                )
               </li>
             ))}
           </ul>
