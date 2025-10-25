@@ -69,7 +69,7 @@ export function UserPinLayer({ searchQuery = '' }) {
 
         const pins = await response.json();
         const error = response.ok ? null : { message: 'Failed to fetch pins' };
-        
+
         console.log('UserPinLayer: RPC RETURNED!');
         console.log('UserPinLayer: pins type:', typeof pins);
         console.log('UserPinLayer: pins value:', pins);
@@ -79,28 +79,21 @@ export function UserPinLayer({ searchQuery = '' }) {
           console.error('UserPinLayer: Error fetching pins via RPC:', error);
           return;
         }
-        
-        if (!pins) {
-          console.warn('UserPinLayer: RPC returned no pins:', pins);
+
+        if (!pins || !pins.features) {
+          console.warn('UserPinLayer: RPC returned no pins or invalid format:', pins);
           return;
         }
-        
-        console.log('UserPinLayer: Processing', pins.length, 'pins');
 
-        // 3. Transform data into a valid GeoJSON FeatureCollection (MOVED INSIDE TRY)
+        console.log('UserPinLayer: Processing', pins.features.length, 'pins');
+
+        // 3. Transform data into a valid GeoJSON FeatureCollection
         const geojson = {
           type: 'FeatureCollection',
-          features: pins.map(pin => ({
+          features: pins.features.map(feature => ({
             type: 'Feature',
-            geometry: pin.geojson,
-            properties: { 
-              id: pin.id, 
-              title: pin.title, 
-              type: pin.type, 
-              description: pin.description, 
-              creator: pin.creator_name, 
-              tags: JSON.stringify(pin.tags) 
-            }
+            geometry: feature.geometry,
+            properties: feature.properties
           }))
         };
         console.log('UserPinLayer: GeoJSON created:', geojson);
