@@ -49,22 +49,29 @@ export function UserPinLayer() {
 
       // 2. Fetch data using the robust PostGIS function
       console.log("UserPinLayer: Fetching pins using 'get_locations_geojson' RPC...");
-      const { data: pins, error } = await supabase.rpc('get_locations_geojson');
-      if (error) {
-        console.error('UserPinLayer: Error fetching pins via RPC:', error);
-        return;
-      }
-      if (!pins || pins.length === 0) {
-        console.warn('UserPinLayer: RPC function returned no pins or empty array.', pins);
-        // Ensure existing layers/sources are removed even if no pins are returned
-        if (map.getSource('user-pins')) {
-          const layersToRemove = ['clusters', 'cluster-count', 'open-camps', 'gatherings', 'quiet-places', 'resources'];
-          layersToRemove.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
-          map.removeSource('user-pins');
+      try {
+        const { data: pins, error } = await supabase.rpc('get_locations_geojson');
+        console.log('UserPinLayer: RPC call completed. Data:', pins, 'Error:', error);
+
+        if (error) {
+          console.error('UserPinLayer: Error fetching pins via RPC:', error);
+          return;
         }
+        if (!pins || pins.length === 0) {
+          console.warn('UserPinLayer: RPC function returned no pins or empty array.', pins);
+          // Ensure existing layers/sources are removed even if no pins are returned
+          if (map.getSource('user-pins')) {
+            const layersToRemove = ['clusters', 'cluster-count', 'open-camps', 'gatherings', 'quiet-places', 'resources'];
+            layersToRemove.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
+            map.removeSource('user-pins');
+          }
+          return;
+        }
+        console.log('UserPinLayer: Pins data received:', pins);
+      } catch (err) {
+        console.error('UserPinLayer: Unexpected error during RPC call:', err);
         return;
       }
-      console.log('UserPinLayer: Pins data received:', pins);
 
       // 3. Transform data into a valid GeoJSON FeatureCollection
       const geojson = {

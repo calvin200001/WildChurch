@@ -16,10 +16,11 @@ import { MapEmptyState } from './components/MapEmptyState';
 import { MapControls } from './components/Map/MapControls';
 import { UserSearch } from './components/UserSearch'; // New import
 import { MessagingPage } from './components/Messages/MessagingPage'; // New import
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
-function AppContent({ user, setUser, profile, getProfile, handleLogout, showAuthModal, setShowAuthModal }) { // Accept user, profile, and auth modal props
+function AppContent({ user, setUser, profile, profileLoading, getProfile, handleLogout, showAuthModal, setShowAuthModal }) { // Accept user, profile, and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
   const [showPinDetailsModal, setShowPinDetailsModal] = useState(false); // New state for pin details modal
@@ -133,30 +134,61 @@ function AppContent({ user, setUser, profile, getProfile, handleLogout, showAuth
 }
 
 function App() {
-  const [user, setUser] = useState(null); // State to store authenticated user
-  const [profile, setProfile] = useState(null); // New state for user profile
-  const [showAuthModal, setShowAuthModal] = useState(false); // State to control AuthModal visibility
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true); // New state
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Function to fetch user profile
   const getProfile = async (userId) => {
     if (!userId) {
-      console.log('getProfile: No userId provided, clearing profile.');
+      console.log('getProfile: No userId, clearing profile');
       setProfile(null);
+      setProfileLoading(false);
       return;
     }
-    console.log('getProfile: Attempting to fetch profile for userId:', userId);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('username, avatar_url')
-      .eq('id', userId)
-      .single();
+    
+    console.log('getProfile: Fetching for userId:', userId);
+    setProfileLoading(true); // Start loading
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*') // Get ALL columns, not just username/avatar_url
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle missing profiles gracefully
 
-    if (error) {
-      console.error('getProfile: Error fetching profile for userId', userId, ':', error);
+      if (error) {
+        console.error('getProfile: Error:', error);
+        setProfile(null);
+      } else if (data) {
+        console.log('getProfile: Success:', data);
+        setProfile(data);
+      } else {
+        console.log('getProfile: No profile found, creating one...');
+        // Auto-create profile if it doesn't exist
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: userId,
+            first_name: user?.user_metadata?.first_name || 'User',
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Failed to create profile:', insertError);
+          setProfile(null);
+        } else {
+          console.log('Auto-created profile:', newProfile);
+          setProfile(newProfile);
+        }
+      }
+    } catch (err) {
+      console.error('getProfile: Unexpected error:', err);
       setProfile(null);
-    } else {
-      console.log('getProfile: Successfully fetched profile:', data);
-      setProfile(data);
+    } finally {
+      setProfileLoading(false); // Always stop loading
     }
   };
 
@@ -166,140 +198,145 @@ function App() {
       console.error('Error logging out:', error.message);
     } else {
       setUser(null);
-      setProfile(null); // Clear profile on logout
+      setProfile(null);
+      setProfileLoading(false);
       console.log('User logged out');
     }
   };
 
   useEffect(() => {
-    // Function to handle session from URL and potentially refresh
-    const handleSessionFromUrl = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('handleSessionFromUrl: Initial session from URL:', session);
+    let mounted = true; // Prevent state updates after unmount
 
-      if (session?.user) {
-        setUser(session.user);
-        await getProfile(session.user.id);
-
-        // Check if session is short-lived or stale and attempt refresh
-        const currentTime = Date.now() / 1000;
-        if (session.expires_at && (session.expires_at - currentTime < 60 || session.expires_at - currentTime > 3600)) {
-          console.log('handleSessionFromUrl: Session appears problematic (short-lived or very old), attempting to refresh...');
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError) {
-            console.error('handleSessionFromUrl: Error refreshing session:', refreshError);
-          } else if (refreshData.session) {
-            console.log('handleSessionFromUrl: Session successfully refreshed after initial check:', refreshData.session);
-            setUser(refreshData.session.user);
-            await getProfile(refreshData.session.user.id);
-          }
-        }
-      } else {
-        setUser(null);
-        setProfile(null);
-      }
-
-      // Clear URL hash to prevent re-processing stale tokens
-      if (window.location.hash) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        console.log('URL hash cleared.');
-      }
-    };
-
-    // Call immediately on mount
-    handleSessionFromUrl();
-
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change event:', event);
-        console.log('Auth state change session:', session);
-
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
         if (session?.user) {
           setUser(session.user);
           await getProfile(session.user.id);
         } else {
           setUser(null);
-          setProfile(null); // Clear profile if user logs out
+          setProfile(null);
+          setProfileLoading(false);
+        }
+
+        // Clear URL hash AFTER processing
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    // Auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth event:', event);
+        
+        if (session?.user) {
+          setUser(session.user);
+          await getProfile(session.user.id);
+        } else {
+          setUser(null);
+          setProfile(null);
+          setProfileLoading(false);
         }
       }
     );
 
     return () => {
+      mounted = false; // Cleanup flag
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Empty deps - run once
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
-        <Route path="/proposals" element={
-          <>
-            <Seo
-              title="WildChurch - Proposals"
-              description="View and commit to proposed gatherings in the wild."
-              name="WildChurch"
-              type="website"
-              canonicalUrl={`${baseUrl}/proposals`}
-            />
-            <Header
-              user={user}
-              profile={profile}
-              onLogout={handleLogout}
-              onShowAuth={() => setShowAuthModal(true)}
-              onShowUserProfile={() => setShowUserProfileModal(true)}
-            />
-            <div className="pt-16"> {/* Offset for fixed header */}
-              <GatheringsBoard user={user} /> {/* Pass user prop to GatheringsBoard */}
-            </div>
-          </>
-        } />
-        <Route path="/users" element={ // New route for user search
-          <>
-            <Seo
-              title="WildChurch - Find Users"
-              description="Search for other users by interests, beliefs, and location."
-              name="WildChurch"
-              type="website"
-              canonicalUrl={`${baseUrl}/users`}
-            />
-            <Header
-              user={user}
-              onLogout={handleLogout}
-              onShowAuth={() => setShowAuthModal(true)}
-              onShowUserProfile={() => setShowUserProfileModal(true)}
-            />
-            <div className="pt-16"> {/* Offset for fixed header */}
-              <UserSearch user={user} />
-            </div>
-          </>
-        } />
-        <Route path="/messages" element={ // Main messages page
-          <>
-            <Header
-              user={user}
-              profile={profile}
-              onLogout={handleLogout}
-              onShowAuth={() => setShowAuthModal(true)}
-              onShowUserProfile={() => setShowUserProfileModal(true)}
-            />
-            <MessagingPage user={user} profile={profile} />
-          </>
-        } />
-        <Route path="/messages/:conversationId" element={ // Specific conversation view
-          <>
-            <Header
-              user={user}
-              profile={profile}
-              onLogout={handleLogout}
-              onShowAuth={() => setShowAuthModal(true)}
-              onShowUserProfile={() => setShowUserProfileModal(true)}
-            />
-            <MessagingPage user={user} profile={profile} />
-          </>
-        } />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} profileLoading={profileLoading} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
+          <Route path="/proposals" element={
+            <>
+              <Seo
+                title="WildChurch - Proposals"
+                description="View and commit to proposed gatherings in the wild."
+                name="WildChurch"
+                type="website"
+                canonicalUrl={`${baseUrl}/proposals`}
+              />
+              <Header
+                user={user}
+                profile={profile}
+                profileLoading={profileLoading}
+                onLogout={handleLogout}
+                onShowAuth={() => setShowAuthModal(true)}
+                onShowUserProfile={() => setShowUserProfileModal(true)}
+              />
+              <div className="pt-16"> {/* Offset for fixed header */}
+                <GatheringsBoard user={user} /> {/* Pass user prop to GatheringsBoard */}
+              </div>
+            </>
+          } />
+          <Route path="/users" element={ // New route for user search
+            <>
+              <Seo
+                title="WildChurch - Find Users"
+                description="Search for other users by interests, beliefs, and location."
+                name="WildChurch"
+                type="website"
+                canonicalUrl={`${baseUrl}/users`}
+              />
+              <Header
+                user={user}
+                profile={profile}
+                profileLoading={profileLoading}
+                onLogout={handleLogout}
+                onShowAuth={() => setShowAuthModal(true)}
+                onShowUserProfile={() => setShowUserProfileModal(true)}
+              />
+              <div className="pt-16"> {/* Offset for fixed header */}
+                <UserSearch user={user} />
+              </div>
+            </>
+          } />
+          <Route path="/messages" element={ // Main messages page
+            <>
+              <Header
+                user={user}
+                profile={profile}
+                profileLoading={profileLoading}
+                onLogout={handleLogout}
+                onShowAuth={() => setShowAuthModal(true)}
+                onShowUserProfile={() => setShowUserProfileModal(true)}
+              />
+              <MessagingPage user={user} profile={profile} />
+            </>
+          } />
+          <Route path="/messages/:conversationId" element={ // Specific conversation view
+            <>
+              <Header
+                user={user}
+                profile={profile}
+                profileLoading={profileLoading}
+                onLogout={handleLogout}
+                onShowAuth={() => setShowAuthModal(true)}
+                onShowUserProfile={() => setShowUserProfileModal(true)}
+              />
+              <MessagingPage user={user} profile={profile} />
+            </>
+          } />
+        </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

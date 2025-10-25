@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react'; // For default avatar
 import { LoadingSpinner } from '../LoadingSpinner';
+import { ProfileLoading } from '../ProfileLoading'; // New import
 
 export function ConversationList({ user, profile, onSelectConversation }) {
   const [conversations, setConversations] = useState([]);
@@ -20,73 +21,109 @@ export function ConversationList({ user, profile, onSelectConversation }) {
     const fetchConversations = async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase
-        .from('conversation_participants')
-        .select(`
-          conversation_id,
-          conversations(last_message_at),
-          participant:profiles(id, username, avatar_url)
-        `)
-        .eq('user_id', user.id);
+      
+      try {
+        // Step 1: Get all conversations for this user
+        const { data: participantData, error: participantError } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error fetching conversations:', error);
+        if (participantError) throw participantError;
+        
+        if (!participantData || participantData.length === 0) {
+          setConversations([]);
+          setLoading(false);
+          return;
+        }
+
+        const conversationIds = participantData.map(p => p.conversation_id);
+
+        // Step 2: Get conversation details
+        const { data: convData, error: convError } = await supabase
+          .from('conversations')
+          .select('*')
+          .in('id', conversationIds);
+
+        if (convError) throw convError;
+
+        // Step 3: For each conversation, get the OTHER participant
+        const conversationsWithParticipants = await Promise.all(
+          convData.map(async (conv) => {
+            const { data: participants, error: partError } = await supabase
+              .from('conversation_participants')
+              .select(`
+                user_id,
+                profiles:user_id (
+                  id,
+                  username,
+                  avatar_url
+                )
+              `)
+              .eq('conversation_id', conv.id)
+              .neq('user_id', user.id) // Get the OTHER user
+              .single();
+
+            if (partError) {
+              console.error('Error fetching participant:', partError);
+              return null;
+            }
+
+            return {
+              id: conv.id,
+              last_message_at: conv.last_message_at,
+              otherParticipant: participants.profiles
+            };
+          })
+        );
+
+        // Filter out any failed fetches and sort
+        const validConversations = conversationsWithParticipants
+          .filter(c => c !== null)
+          .sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at));
+
+        setConversations(validConversations);
+      } catch (err) {
+        console.error('Error fetching conversations:', err);
         setError('Failed to load conversations.');
         setConversations([]);
-      } else {
-        // Filter out the current user from participants and sort by last message
-        const formattedConversations = data
-          .map(cp => ({
-            id: cp.conversation_id,
-            last_message_at: cp.conversations.last_message_at,
-            otherParticipant: cp.participant.filter(p => p.id !== user.id)[0] // Assuming 1-on-1 chat
-          }))
-          .sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at));
-        setConversations(formattedConversations);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchConversations();
 
-    // Realtime subscription for conversation updates (e.g., new messages)
-    const conversationsSubscription = supabase
+    // Realtime subscription - simpler approach
+    const subscription = supabase
       .channel('conversations_list')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen for INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
-          table: 'conversations',
-          filter: `id=in.(${conversations.map(c => c.id).join(',')})` // Only listen for relevant conversations
+          table: 'messages'
         },
-        (payload) => {
-          // Re-fetch conversations to get updated last_message_at and sort
-          fetchConversations();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT', // Listen for new messages to update last_message_at
-          schema: 'public',
-          table: 'messages',
-          filter: `sender_id=eq.${user.id}` // Only listen for messages sent by current user
-        },
-        (payload) => {
-          // Re-fetch conversations to get updated last_message_at and sort
+        () => {
+          // Any message change triggers refetch
           fetchConversations();
         }
       )
       .subscribe();
 
     return () => {
-      conversationsSubscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [user, conversations.length]); // Re-run if user changes or conversation count changes
+  }, [user?.id]); // Only depend on user.id, not the whole user object
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="p-4 space-y-4">
+        <ProfileLoading />
+        <ProfileLoading />
+        <ProfileLoading />
+      </div>
+    );
   }
 
   if (error) {

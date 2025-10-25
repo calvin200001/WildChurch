@@ -26,23 +26,37 @@ export function ConversationView({ user, profile }) {
     const fetchMessages = async () => {
       setLoading(true);
       setError(null);
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles(username, avatar_url)
-        `)
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+      
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select(`
+            *,
+            sender:sender_id (
+              id,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching messages:', error);
+        if (error) throw error;
+        
+        // Transform the data to match expected structure
+        const messagesWithProfiles = data.map(msg => ({
+          ...msg,
+          sender: msg.sender // This is now the full profile object
+        }));
+        
+        setMessages(messagesWithProfiles);
+      } catch (err) {
+        console.error('Error fetching messages:', err);
         setError('Failed to load messages.');
         setMessages([]);
-      } else {
-        setMessages(data);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchMessages();
@@ -161,10 +175,10 @@ export function ConversationView({ user, profile }) {
             </div>
             {message.sender_id === user.id && (
               <div className="flex-shrink-0 ml-3">
-                {profile?.avatar_url ? (
+                {message.sender?.avatar_url ? (
                   <img
-                    src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
-                    alt="Avatar"
+                    src={supabase.storage.from('avatars').getPublicUrl(message.sender.avatar_url).data.publicUrl}
+                    alt="Your Avatar"
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (

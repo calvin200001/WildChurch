@@ -4,9 +4,21 @@ import { useState } from 'react';
 
 import { supabase } from '../lib/supabase'; // Import supabase to get public URL for avatar
 
-export function Header({ user, profile, onLogout, onShowAuth, onShowUserProfile }) {
+export function Header({
+  user,
+  profile,
+  profileLoading, // Add this prop
+  onLogout,
+  onShowAuth,
+  onShowUserProfile
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Show loading state while profile is fetching
+  const displayName = profileLoading
+    ? 'Loading...'
+    : profile?.username || user?.email || 'User';
 
   return (
     <header className="absolute top-0 left-0 right-0 z-20 bg-earth-900/95 backdrop-blur-sm border-b border-earth-700">
@@ -49,18 +61,22 @@ export function Header({ user, profile, onLogout, onShowAuth, onShowUserProfile 
             
             {user ? (
               <div className="flex items-center space-x-4">
-                {profile?.avatar_url ? (
+                {profileLoading ? (
+                  <div className="w-8 h-8 rounded-full bg-earth-700 animate-pulse" />
+                ) : profile?.avatar_url ? (
                   <img
                     src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
                     alt="Avatar"
                     className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      // Fallback if image fails to load
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
                   />
-                ) : (
-                  <User className="h-8 w-8 text-earth-300" />
-                )}
-                <span className="text-earth-300 text-sm">
-                  {profile?.username || user.email}
-                </span>
+                ) : null}
+                <User className="h-8 w-8 text-earth-300" style={{ display: profile?.avatar_url ? 'none' : 'block' }} />
+                <span className="text-earth-300 text-sm">{displayName}</span>
                 <button
                   onClick={onShowUserProfile}
                   className="flex items-center space-x-2 btn-secondary text-sm"
@@ -131,17 +147,18 @@ export function Header({ user, profile, onLogout, onShowAuth, onShowUserProfile 
               {user ? (
                 <>
                   <div className="flex items-center space-x-2 py-2">
-                    {profile?.avatar_url ? (
+                    {profileLoading ? (
+                      <div className="w-8 h-8 rounded-full bg-earth-700 animate-pulse" />
+                    ) : profile?.avatar_url ? (
                       <img
                         src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
                         alt="Avatar"
                         className="w-8 h-8 rounded-full object-cover"
                       />
-                    ) : (
-                      <User className="h-8 w-8 text-earth-300" />
-                    )}
+                    ) : null}
+                    <User className="h-8 w-8 text-earth-300" style={{ display: profile?.avatar_url ? 'none' : 'block' }} />
                     <span className="text-earth-300 text-sm">
-                      {profile?.username || user.email}
+                      {displayName}
                     </span>
                   </div>
                   <button

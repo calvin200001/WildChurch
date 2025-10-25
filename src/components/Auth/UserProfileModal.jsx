@@ -21,44 +21,63 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   }, [isOpen, user]);
 
   async function getProfile() {
-    setLoading(true);
-    console.log('UserProfileModal: Attempting to fetch profile for user.id:', user.id);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, avatar_url, interests, beliefs, state')
-        .eq('id', user.id)
-        .single();
+  setLoading(true);
+  console.log('UserProfileModal: Attempting to fetch profile for user.id:', user.id);
+  
+  try {
+    console.log('UserProfileModal: Executing Supabase query...');
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username, avatar_url, interests, beliefs, state')
+      .eq('id', user.id)
+      .maybeSingle(); // ← CHANGED: Use maybeSingle() instead of single()
+    
+    console.log('UserProfileModal: Query completed. Data:', data, 'Error:', error);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
-        console.error('UserProfileModal: Error fetching profile:', error);
-        // Optionally set an error state to display to the user
-      } else if (data) {
-        console.log('UserProfileModal: Profile data found:', data);
-        setUsername(data.username || '');
-        setAvatarUrl(data.avatar_url || '');
-        setInterests(data.interests ? data.interests.join(', ') : '');
-        setBeliefs(data.beliefs ? data.beliefs.join(', ') : '');
-        setProfileState(data.state || '');
-        if (data.avatar_url) {
-          downloadImage(data.avatar_url);
-        }
-      } else {
-        console.log('UserProfileModal: No profile found for user. Initializing with empty values.');
-        setUsername('');
-        setAvatarUrl('');
-        setInterests('');
-        setBeliefs('');
-        setProfileState('');
-        setAvatarPreview(''); // Clear any previous preview
+    if (error) {
+      // Real error occurred
+      console.error('UserProfileModal: Database error:', error);
+      // Still allow user to fill in the form
+      setUsername('');
+      setAvatarUrl('');
+      setInterests('');
+      setBeliefs('');
+      setProfileState('');
+      setAvatarPreview('');
+    } else if (data) {
+      // Profile exists - populate form
+      console.log('UserProfileModal: Profile found:', data);
+      setUsername(data.username || '');
+      setAvatarUrl(data.avatar_url || '');
+      setInterests(data.interests ? data.interests.join(', ') : '');
+      setBeliefs(data.beliefs ? data.beliefs.join(', ') : '');
+      setProfileState(data.state || '');
+      if (data.avatar_url) {
+        downloadImage(data.avatar_url);
       }
-    } catch (err) {
-      console.error('UserProfileModal: Unexpected error in getProfile:', err);
-      // Set an error state if needed
-    } finally {
-      setLoading(false); // Ensure loading is always set to false
+    } else {
+      // No profile exists yet - show empty form
+      console.log('UserProfileModal: No profile found. User can create one.');
+      setUsername('');
+      setAvatarUrl('');
+      setInterests('');
+      setBeliefs('');
+      setProfileState('');
+      setAvatarPreview('');
     }
+  } catch (err) {
+    console.error('UserProfileModal: Unexpected error:', err);
+    // Still allow form interaction
+    setUsername('');
+    setAvatarUrl('');
+    setInterests('');
+    setBeliefs('');
+    setProfileState('');
+    setAvatarPreview('');
+  } finally {
+    setLoading(false); // ALWAYS stop loading
   }
+}
 
   async function downloadImage(path) {
     try {
