@@ -139,9 +139,11 @@ function App() {
   // Function to fetch user profile
   const getProfile = async (userId) => {
     if (!userId) {
+      console.log('getProfile: No userId provided, clearing profile.');
       setProfile(null);
       return;
     }
+    console.log('getProfile: Attempting to fetch profile for userId:', userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('username, avatar_url')
@@ -149,9 +151,10 @@ function App() {
       .single();
 
     if (error) {
-      console.error('Error fetching profile for header:', error);
+      console.error('getProfile: Error fetching profile for userId', userId, ':', error);
       setProfile(null);
     } else {
+      console.log('getProfile: Successfully fetched profile:', data);
       setProfile(data);
     }
   };
@@ -178,12 +181,15 @@ function App() {
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state change:', event, session); // Added console log
-        setUser(session?.user || null);
+      async (event, session) => { // Made async to await getProfile
+        console.log('Auth state change event:', event);
+        console.log('Auth state change session:', session);
+
         if (session?.user) {
-          getProfile(session.user.id);
+          setUser(session.user);
+          await getProfile(session.user.id); // Await getProfile to ensure it completes
         } else {
+          setUser(null);
           setProfile(null); // Clear profile if user logs out
         }
       }
