@@ -117,6 +117,15 @@ export function UserPinLayer() {
         }
       });
       console.log('Map updated with new pins.');
+
+      // Add click listeners for each pin layer
+      const pinLayers = ['open-camps', 'gatherings', 'quiet-places', 'resources'];
+      pinLayers.forEach(layerId => {
+        map.on('click', layerId, (e) => {
+          handlePinClick(e, map);
+          e.originalEvent.stopPropagation(); // Stop propagation to prevent other map click handlers
+        });
+      });
     };
 
     const onLoad = () => {
@@ -150,6 +159,9 @@ export function UserPinLayer() {
     return () => {
       subscription.unsubscribe();
       map.off('load', onLoad);
+      pinLayers.forEach(layerId => {
+        map.off('click', layerId);
+      });
       // Proper cleanup would remove sources and layers here, but this is often skipped if the map is permanent
     };
   }, [mapContainer]); // This effect only re-runs if the map instance itself changes
