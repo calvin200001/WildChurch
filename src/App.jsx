@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { MAP_CONFIG } from './lib/mapConfig';
 import { UserPinLayer } from './components/Map/UserPinLayer';
 import { DropPinModal } from './components/Map/DropPinModal';
@@ -144,6 +144,9 @@ function App() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false); // Moved here
+
+  const navigate = useNavigate(); // Get navigate function
+  const location = useLocation(); // Get current location
 
   const [showReloadPrompt, setShowReloadPrompt] = useState(false);
   const [offlineReady, setOfflineReady] = useState(false);
@@ -298,6 +301,12 @@ function App() {
       authListener.subscription.unsubscribe();
     };
   }, []); // Empty deps - run once
+
+  useEffect(() => {
+    if (user && location.pathname === '/') {
+      navigate('/app'); // Redirect to /app if logged in and on landing page
+    }
+  }, [user, location.pathname, navigate]); // Dependencies
 
   return (
     <BrowserRouter>
