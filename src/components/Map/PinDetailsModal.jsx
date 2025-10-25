@@ -18,27 +18,34 @@ export function PinDetailsModal({ isOpen, onClose, pinId }) {
       setError(null);
       console.log('PinDetailsModal: Fetching details for pinId:', pinId);
       try {
-        const { data, error } = await supabase
-          .from('locations')
-          .select(`
-            *,
-            profiles(username, avatar_url)
-          `)
-          .eq('id', pinId)
-          .single();
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/locations?id=eq.${pinId}&select=*,profiles(username,avatar_url)`,
+          {
+            method: 'GET',
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-        console.log('PinDetailsModal: Supabase query data:', data, 'error:', error);
+        const data = await response.json();
+        const error = response.ok ? null : { message: 'Failed to fetch pin details' };
+
+        console.log('PinDetailsModal: Fetch API data:', data, 'error:', error);
 
         if (error) {
           throw error;
         }
-        if (!data) {
+        if (!data || data.length === 0) {
           setError('Pin not found.');
           setPinDetails(null);
           return;
         }
-        setPinDetails(data);
-        console.log('PinDetailsModal: Successfully set pin details:', data);
+        // Assuming .single() behavior, we expect an array with one item or empty
+        setPinDetails(data[0]); 
+        console.log('PinDetailsModal: Successfully set pin details:', data[0]);
       } catch (err) {
         console.error('PinDetailsModal: Error fetching pin details:', err);
         setError('Failed to load pin details.');
