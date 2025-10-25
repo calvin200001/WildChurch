@@ -134,7 +134,22 @@ const AuthModal = ({ isOpen, onClose }) => {
           <button
             type="button"
             onClick={async () => {
-              // Google OAuth logic (same as before)
+              setLoading(true);
+              setError(null);
+              try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'google',
+                  options: {
+                    redirectTo: window.location.origin, // Redirects back to your app
+                  },
+                });
+                if (error) throw error;
+                // OAuth flow will handle redirection, so no need to close modal here
+              } catch (err) {
+                setError(err.message);
+              } finally {
+                setLoading(false);
+              }
             }}
             className="mt-4 w-full bg-earth-700 hover:bg-earth-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition-colors"
             disabled={loading}
