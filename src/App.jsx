@@ -179,6 +179,7 @@ function App() {
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session); // Added console log
         setUser(session?.user || null);
         if (session?.user) {
           getProfile(session.user.id);
@@ -230,10 +231,28 @@ function App() {
           </>
         } />
         <Route path="/messages" element={ // Main messages page
-          <MessagingPage user={user} profile={profile} />
+          <>
+            <Header
+              user={user}
+              profile={profile}
+              onLogout={handleLogout}
+              onShowAuth={() => setShowAuthModal(true)}
+              onShowUserProfile={() => setShowUserProfileModal(true)}
+            />
+            <MessagingPage user={user} profile={profile} />
+          </>
         } />
         <Route path="/messages/:conversationId" element={ // Specific conversation view
-          <MessagingPage user={user} profile={profile} />
+          <>
+            <Header
+              user={user}
+              profile={profile}
+              onLogout={handleLogout}
+              onShowAuth={() => setShowAuthModal(true)}
+              onShowUserProfile={() => setShowUserProfileModal(true)}
+            />
+            <MessagingPage user={user} profile={profile} />
+          </>
         } />
       </Routes>
     </BrowserRouter>
