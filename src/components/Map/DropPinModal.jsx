@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { MapPin } from 'lucide-react';
-import { checkRateLimit } from '../../lib/rateLimit'; // ADD THIS
+import { checkRateLimit } from '../../lib/rateLimit';
 
-export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { // Accept isOpen prop // Added user prop
+export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) {
   const [formData, setFormData] = useState({
     type: 'open_camp',
     title: '',
@@ -26,7 +26,7 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
       return;
     }
 
-    // ADD THIS BLOCK
+    // Rate limiting check
     const { allowed, remaining } = await checkRateLimit(
       supabase,
       user.id,
@@ -39,29 +39,29 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
       alert(`Rate limit exceeded. You can only create 5 pins per hour. Please wait before creating more. Remaining: ${remaining}`);
       return;
     }
-    // END ADD BLOCK
 
     let data, error;
 
     if (formData.type === 'gathering') {
       console.log('Creating meeting proposal...');
-      ({ data, error } = await supabase
-        .from('meeting_proposals')
-        .insert({
-          proposed_location: `SRID=4326;POINT(${location.lng} ${location.lat})`,
-          proposed_type: 'gathering',
-          title: formData.title,
-          description: formData.description,
-          proposed_start_time: formData.proposedStartTime,
-          proposed_end_time: formData.activeUntilOrProposedEndTime,
-          proposed_by: user.id
-        })
-        .select()
-        .single());
+      
+      // Use RPC for PostGIS point creation
+      const { data: proposalData, error: proposalError } = await supabase.rpc('create_meeting_proposal', {
+        p_lng: location.lng,
+        p_lat: location.lat,
+        p_title: formData.title,
+        p_description: formData.description,
+        p_proposed_start_time: formData.proposedStartTime,
+        p_proposed_end_time: formData.activeUntilOrProposedEndTime,
+        p_proposed_by: user.id
+      });
+
+      data = proposalData;
+      error = proposalError;
 
       console.log('Proposal result:', { data, error });
 
-      if (!error) {
+      if (!error && data) {
         await supabase.from('proposal_commitments').insert({
           proposal_id: data.id,
           user_id: user.id
@@ -70,22 +70,24 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
 
     } else {
       console.log('Creating location pin...');
-      ({ data, error } = await supabase
-        .from('locations')
-        .insert({
-          location: `SRID=4326;POINT(${location.lng} ${location.lat})`,
-          type: formData.type,
-          title: formData.title,
-          description: formData.description,
-          active_until: formData.activeUntilOrProposedEndTime,
-          created_by: user.id
-        })
-        .select()
-        .single());
+      
+      // Use RPC for PostGIS point creation
+      const { data: locationData, error: locationError } = await supabase.rpc('create_location_pin', {
+        p_lng: location.lng,
+        p_lat: location.lat,
+        p_type: formData.type,
+        p_title: formData.title,
+        p_description: formData.description,
+        p_active_until: formData.activeUntilOrProposedEndTime,
+        p_created_by: user.id
+      });
+
+      data = locationData;
+      error = locationError;
 
       console.log('Location insert result:', { data, error });
 
-      if (!error && formData.tags.length > 0) {
+      if (!error && data && formData.tags.length > 0) {
         console.log('Adding tags...');
         const tagsResult = await supabase
           .from('pin_tags')
@@ -101,7 +103,7 @@ export function DropPinModal({ isOpen, location, onClose, onSuccess, user }) { /
 
     if (error) {
       console.error('Error creating pin/proposal:', error);
-      alert(`Error: ${error.message}`); // Show user the error
+      alert(`Error: ${error.message}`);
       return;
     }
 
