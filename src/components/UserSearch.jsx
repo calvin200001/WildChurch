@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // New import
 import { supabase } from '../lib/supabase'; // Adjust path as needed
-import { LoadingSpinner } from './LoadingSpinner'; // Assuming a LoadingSpinner component exists
+import { LoadingSpinner } from './LoadingSpinner'; // Assuming a LoadingSpinner component exists // Assuming a LoadingSpinner component exists
 import { MessageSquare } from 'lucide-react'; // New import for message icon
 
 export function UserSearch({ user }) { // Accept user prop
