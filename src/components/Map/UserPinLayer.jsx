@@ -28,7 +28,8 @@ function handlePinClick(e, map) {
 }
 
 export function UserPinLayer() {
-  const { current: map } = useMap();
+  const mapRef = useMap();
+  const map = mapRef.current?.getMap(); // Get the actual MapLibre instance
 
   // This is the single, controlling useEffect for this component's entire lifecycle.
   useEffect(() => {
