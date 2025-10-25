@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useMap } from 'react-map-gl';
 import { supabase } from '@/lib/supabase';
 import maplibregl from 'maplibre-gl';
@@ -8,7 +8,7 @@ function handlePinClick(e, map) {
   const pin = e.features[0];
   const coordinates = pin.geometry.coordinates.slice();
   const { title, description, type, creator, tags: tagsString, id } = pin.properties;
-  const tags = tagsString ? JSON.parse(tagsString) : []; // Parse tags back to array
+  const tags = tagsString ? JSON.parse(tagsString) : [];
   
   while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
@@ -33,27 +33,23 @@ function handlePinClick(e, map) {
 export function UserPinLayer({ searchQuery = '' }) {
   const { current: mapContainer } = useMap();
 
-  // This is the single, controlling useEffect for this component's entire lifecycle.
   useEffect(() => {
-    const map = mapContainer?.getMap(); // Get it inside the effect
+    const map = mapContainer?.getMap();
     if (!map) return;
 
-    const pinLayers = ['open-camps', 'gatherings', 'quiet-places', 'resources']; // Moved pinLayers definition here
+    const pinLayers = ['open-camps', 'gatherings', 'quiet-places', 'resources'];
 
-    // Define all logic INSIDE the effect to avoid stale closures.
     const loadPinsAndLayers = async () => {
-      // 1. Clean up previous layers on every run to prevent errors
+      // 1. Clean up previous layers
       if (map.getSource('user-pins')) {
         const layers = ['clusters', 'cluster-count', 'open-camps', 'gatherings', 'quiet-places', 'resources'];
         layers.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
         map.removeSource('user-pins');
       }
 
-      // 2. Fetch data using the robust PostGIS function
-      console.log("UserPinLayer: Fetching pins using 'get_pins_json' RPC...");
+      // 2. Fetch pins from RPC
+      console.log('UserPinLayer: Fetching pins...');
       try {
-        console.log('UserPinLayer: About to call RPC...');
-        
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/get_pins_json`,
           {
@@ -67,31 +63,21 @@ export function UserPinLayer({ searchQuery = '' }) {
           }
         );
 
-        console.log('UserPinLayer: Response status:', response.status);
-        console.log('UserPinLayer: Response ok:', response.ok);
-
         if (!response.ok) {
           const errorText = await response.text();
           console.error('UserPinLayer: Fetch failed!', response.status, errorText);
           return;
         }
 
-        const responseText = await response.text();
-        console.log('UserPinLayer: Raw response:', responseText);
-        
-        const pins = JSON.parse(responseText);
-        console.log('UserPinLayer: Parsed pins:', pins);
-        console.log('UserPinLayer: pins type:', typeof pins);
-        console.log('UserPinLayer: pins.features length:', pins?.features?.length);
+        const pins = await response.json();
+        console.log('UserPinLayer: Loaded', pins.features?.length || 0, 'pins');
 
-        if (!pins || !pins.features) {
-          console.warn('UserPinLayer: RPC returned no pins or invalid format:', pins);
+        if (!pins || !pins.features || pins.features.length === 0) {
+          console.warn('UserPinLayer: No pins to display');
           return;
         }
 
-        console.log('UserPinLayer: Processing', pins.features.length, 'pins');
-
-        // 3. Transform data into a valid GeoJSON FeatureCollection
+        // 3. Create GeoJSON
         const geojson = {
           type: 'FeatureCollection',
           features: pins.features.map(feature => ({
@@ -100,10 +86,8 @@ export function UserPinLayer({ searchQuery = '' }) {
             properties: feature.properties
           }))
         };
-        console.log('UserPinLayer: GeoJSON created:', geojson);
 
-        // 4. Add the source and all layers to the map
-        console.log('UserPinLayer: Map object before addSource:', map);
+        // 4. Add source and layers to map
         map.addSource('user-pins', { 
           type: 'geojson', 
           data: geojson, 
@@ -111,10 +95,34 @@ export function UserPinLayer({ searchQuery = '' }) {
           clusterMaxZoom: 14, 
           clusterRadius: 50 
         });
-        console.log('UserPinLayer: Added user-pins source.');
 
-        map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
-        map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
+        // Cluster layers
+        map.addLayer({ 
+          id: 'clusters', 
+          type: 'circle', 
+          source: 'user-pins', 
+          filter: ['has', 'point_count'], 
+          paint: { 
+            'circle-color': '#4a7c4a', 
+            'circle-radius': 20 
+          } 
+        });
+        
+        map.addLayer({ 
+          id: 'cluster-count', 
+          type: 'symbol', 
+          source: 'user-pins', 
+          filter: ['has', 'point_count'], 
+          layout: { 
+            'text-field': '{point_count_abbreviated}', 
+            'text-size': 12 
+          }, 
+          paint: { 
+            'text-color': 'white' 
+          } 
+        });
+
+        // Individual pin layers
         map.addLayer({
           id: 'open-camps',
           type: 'circle',
@@ -166,13 +174,14 @@ export function UserPinLayer({ searchQuery = '' }) {
             'circle-stroke-color': '#ffffff'
           }
         });
-        console.log('Map updated with new pins.');
+        
+        console.log('UserPinLayer: Map updated with', pins.features.length, 'pins');
 
-        // Add click listeners for each pin layer
+        // Add click listeners
         pinLayers.forEach(layerId => {
           map.on('click', layerId, (e) => {
             handlePinClick(e, map);
-            e.originalEvent.stopPropagation(); // Stop propagation to prevent other map click handlers
+            e.originalEvent.stopPropagation();
           });
         });
         
@@ -183,12 +192,11 @@ export function UserPinLayer({ searchQuery = '' }) {
     };
 
     const onLoad = () => {
-      console.log("Map style loaded. Loading pins without custom icons...");
-      // Skip icon loading for now, use default markers
+      console.log("UserPinLayer: Map loaded, fetching pins...");
       loadPinsAndLayers();
     };
 
-    // Attach the single 'load' event listener
+    // Attach load event listener
     if (map.isStyleLoaded()) {
       onLoad();
     } else {
@@ -202,23 +210,21 @@ export function UserPinLayer({ searchQuery = '' }) {
         { event: '*', schema: 'public', table: 'locations' }, 
         () => {
           if (map && map.isStyleLoaded()) {
-            // Reload pins as style is loaded
             loadPinsAndLayers();
           }
         }
       )
       .subscribe();
 
-    // Return a cleanup function
+    // Cleanup
     return () => {
       subscription.unsubscribe();
       map.off('load', onLoad);
       pinLayers.forEach(layerId => {
         map.off('click', layerId);
       });
-      // Proper cleanup would remove sources and layers here, but this is often skipped if the map is permanent
     };
-  }, [mapContainer, searchQuery]); // This effect only re-runs if the map instance itself changes
+  }, [mapContainer, searchQuery]);
 
   return null;
 }
