@@ -73,8 +73,8 @@ function AppContent({ user, setUser, profile, profileLoading, getProfile, handle
   return (
     <div className="relative w-screen h-screen pt-16"> {/* Added pt-16 for header */}
       <Seo
-        title="WildChurch - Church in the wild, wherever you are"
-        description="Connect with dispersed Christian communities through crowdsourced mapping, real-time gatherings, and authentic fellowship."
+        title="WildChurch - Church in motion. Family in the wild."
+        description="Connect with dispersed Christian communities through crowdsourced mapping, real-time, Holy-Spirit centered gatherings, and authentic fellowship."
         name="WildChurch"
         type="website"
         canonicalUrl={`${baseUrl}${location.pathname}`}
