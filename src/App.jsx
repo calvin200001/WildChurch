@@ -19,7 +19,7 @@ import { MessagingPage } from './components/Messages/MessagingPage'; // New impo
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
-function AppContent({ user, setUser, profile, getProfile, showAuthModal, setShowAuthModal }) { // Accept user, profile, and auth modal props
+function AppContent({ user, setUser, profile, getProfile, handleLogout, showAuthModal, setShowAuthModal }) { // Accept user, profile, and auth modal props
   const [showDropPinModal, setShowDropPinModal] = useState(false);
   const [pinLocation, setPinLocation] = useState(null);
   const [showPinDetailsModal, setShowPinDetailsModal] = useState(false); // New state for pin details modal
@@ -58,18 +58,11 @@ function AppContent({ user, setUser, profile, getProfile, showAuthModal, setShow
     setShowDropPinModal(true);
   };
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error logging out:', error.message);
-    } else {
-      setUser(null);
-      console.log('User logged out');
-    }
-  };
+  
 
   // Define viewPinDetails on the window object so the popup can call it
   window.viewPinDetails = (pinId) => {
+    console.log(`Viewing details for pin: ${pinId}`); // Add a console log instead of alert
     setSelectedPinId(pinId);
     setShowPinDetailsModal(true);
   };
@@ -163,6 +156,17 @@ function App() {
     }
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error logging out:', error.message);
+    } else {
+      setUser(null);
+      setProfile(null); // Clear profile on logout
+      console.log('User logged out');
+    }
+  };
+
   useEffect(() => {
     // Set initial user session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -192,7 +196,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} getProfile={getProfile} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
+        <Route path="/" element={<AppContent user={user} setUser={setUser} profile={profile} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />} />
         <Route path="/proposals" element={
           <>
             <Seo
