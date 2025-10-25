@@ -60,6 +60,7 @@ export function UserPinLayer() {
       };
 
       // 4. Add the source and all layers to the map
+      console.log('Map object before addSource:', map);
       map.addSource('user-pins', { type: 'geojson', data: geojson, cluster: true, clusterMaxZoom: 14, clusterRadius: 50 });
       map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
       map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
