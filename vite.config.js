@@ -28,7 +28,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        exclude: ['sitemap.xml'],
+        globIgnores: ['sitemap.xml'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.workers\.dev\/.*/i,
