@@ -36,6 +36,8 @@ export function UserPinLayer() {
     const map = mapContainer?.getMap(); // Get it inside the effect
     if (!map) return;
 
+    const pinLayers = ['open-camps', 'gatherings', 'quiet-places', 'resources']; // Moved pinLayers definition here
+
     // Define all logic INSIDE the effect to avoid stale closures.
     const loadPinsAndLayers = async () => {
       // 1. Clean up previous layers on every run to prevent errors
@@ -49,7 +51,7 @@ export function UserPinLayer() {
       console.log("Fetching pins using 'get_locations_geojson' RPC...");
       const { data: pins, error } = await supabase.rpc('get_locations_geojson');
       if (error) { console.error('Error fetching pins via RPC:', error); return; }
-      if (!pins) { console.warn('RPC function returned no pins.'); return; }
+      if (!pins) { console.warn('RPC function returned no pins.', pins); return; }
 
       // 3. Transform data into a valid GeoJSON FeatureCollection
       const geojson = {
@@ -120,7 +122,6 @@ export function UserPinLayer() {
       console.log('Map updated with new pins.');
 
       // Add click listeners for each pin layer
-      const pinLayers = ['open-camps', 'gatherings', 'quiet-places', 'resources'];
       pinLayers.forEach(layerId => {
         map.on('click', layerId, (e) => {
           handlePinClick(e, map);
