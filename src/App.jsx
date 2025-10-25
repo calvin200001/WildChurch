@@ -303,7 +303,7 @@ function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
-          <Route path="/" element={<LandingPage />} /> {/* Landing page at root */}
+          <Route path="/" element={<LandingPage setShowAuthModal={setShowAuthModal} />} /> {/* Landing page at root */}
           <Route path="/app" element={<AppContent user={user} setUser={setUser} profile={profile} profileLoading={profileLoading} getProfile={getProfile} handleLogout={handleLogout} showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} showUserProfileModal={showUserProfileModal} setShowUserProfileModal={setShowUserProfileModal} />} /> {/* Main app at /app */}
           <Route path="/proposals" element={
             <>

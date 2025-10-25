@@ -270,7 +270,7 @@ const Footer = styled.footer` /* Changed to footer for semantic clarity */
   }
 `;
 
-const LandingPage = () => {
+const LandingPage = ({ setShowAuthModal }) => {
     const testimonials = [
         {
             quote: "I met my best friends on the road through WildChurch.",
@@ -301,8 +301,7 @@ const LandingPage = () => {
             <Nav>
                 <Logo>WildChurch</Logo>
                 <div>
-                    <a href="#map">View the Map</a>
-                    <a href="/app">Go to App</a> {/* Portal to the main app */}
+                    <a href="/app">Go to Map App</a> {/* Direct link to main app map */}
                 </div>
             </Nav>
             <main> {/* Wrapped main content in <main> tag */}
@@ -311,7 +310,7 @@ const LandingPage = () => {
                     <Subtext>Find Spirit-led gatherings, prayer nights, and fellowship wherever your path leads.</Subtext> {/* Refined subtext */}
                     <div>
                         <CTAButton href="#map">Explore the Map</CTAButton> {/* Updated CTA text */}
-                        <SecondaryButton href="/app">Go to App</SecondaryButton> {/* Portal to the main app */}
+                        <SecondaryButton as="button" onClick={() => setShowAuthModal(true)}>Join the Movement</SecondaryButton> {/* Opens AuthModal */}
                     </div>
                 </HeroSection>
 
@@ -356,7 +355,7 @@ const LandingPage = () => {
                 <Section id="map">
                     <SectionTitle>Featured Map</SectionTitle>
                     <p style={{ maxWidth: '700px', margin: '0 auto 2rem auto' }}>
-                        Explore where believers are gathering right now — from prayer hikes to campfire worship.
+                        Explore example gatherings — from prayer hikes to campfire worship. This is a beta example, not live data.
                     </p> {/* Intro sentence */}
                     <MapPreview>
                         <Map height={400} defaultCenter={[37.8651, -119.5383]} defaultZoom={7}>
@@ -392,16 +391,16 @@ const LandingPage = () => {
                     <SectionTitle style={{ color: '#FFFFFF' }}>Be part of the movement.</SectionTitle>
                     <p>Add your name, van, tent, or town to the map.</p>
                     <SignUpForm>
-                        <Input type="email" placeholder="Enter your email" />
-                        <ToggleWrapper>
+                        {/* <Input type="email" placeholder="Enter your email" /> */}
+                        {/* <ToggleWrapper>
                             <label>
                                 <input type="checkbox" /> I'm open to host
                             </label>
                             <label>
                                 <input type="checkbox" /> I'm looking for fellowship
                             </label>
-                        </ToggleWrapper>
-                        <CTAButton style={{ backgroundColor: '#FFFFFF', color: '#4A4A4A' }}>Join the Movement</CTAButton> {/* Updated CTA text */}
+                        </ToggleWrapper> */}
+                        <CTAButton as="button" onClick={() => setShowAuthModal(true)} style={{ backgroundColor: '#FFFFFF', color: '#4A4A4A' }}>Join the Movement</CTAButton> {/* Opens AuthModal */}
                     </SignUpForm>
                 </CallToActionSection>
             </main> {/* Closed <main> tag */}
