@@ -134,26 +134,39 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     setAvatarPreview(URL.createObjectURL(file)); // Show preview immediately
     console.log('UserProfileModal: Starting avatar upload to path:', filePath);
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
+    try {
+      const uploadResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/avatars/${filePath}`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': file.type, // Use the file's actual content type
+            'x-upsert': 'true', // For upsert behavior
+            'cache-control': 'max-age=3600', // Cache control
+          },
+          body: file,
+        }
+      );
 
-    console.log('UserProfileModal: Supabase storage upload completed. Error:', uploadError);
+      const uploadData = await uploadResponse.json();
+      const uploadError = uploadResponse.ok ? null : { message: uploadData.message || 'Failed to upload avatar' };
 
-    if (uploadError) {
-      console.error('Error uploading avatar:', uploadError);
+      console.log('UserProfileModal: Supabase storage upload completed. Data:', uploadData, 'Error:', uploadError);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      setAvatarUrl(filePath); // Update avatar_url state with the new path
+      console.log('UserProfileModal: Avatar uploaded successfully. FilePath:', filePath);
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
       setFileError('Error uploading avatar.');
+    } finally {
       setUploading(false);
-      return;
     }
-
-    setAvatarUrl(filePath); // Update avatar_url state with the new path
-    setUploading(false);
-    console.log('UserProfileModal: Avatar uploaded successfully. FilePath:', filePath);
-  }
 
   async function updateProfile(event) {
     event.preventDefault();
