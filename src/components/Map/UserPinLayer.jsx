@@ -66,235 +66,51 @@ export function UserPinLayer() {
   const loadPins = useCallback(async () => {
     if (!map) return;
     
-    console.log('Loading pins from database...');
-    
-    const { data: pins, error } = await supabase
-      .from('locations')
-      .select(`
-        *,
-        profiles:created_by(first_name, avatar_url),
-        pin_tags(tag)
-      `)
-      .eq('visibility', 'public');
-    // REMOVED the active_until filter for now to see ALL pins
+    // This cleanup logic is ESSENTIAL to prevent race conditions on reloads.
+    if (map.getSource('user-pins')) {
+        const layers = ['clusters', 'cluster-count', 'open-camps', 'gatherings', 'quiet-places', 'resources'];
+        layers.forEach(layerId => {
+            if (map.getLayer(layerId)) {
+                map.removeLayer(layerId);
+            }
+        });
+        map.removeSource('user-pins');
+    }
 
-    console.log('Pins fetched:', pins);
-    console.log('Any errors?', error);
+    console.log("Fetching pins using 'get_locations_geojson' RPC...");
+    const { data: pins, error } = await supabase.rpc('get_locations_geojson');
 
     if (error) {
-      console.error('Error fetching pins:', error);
+      console.error('Error fetching pins via RPC:', error);
       return;
     }
 
-    if (!pins || pins.length === 0) {
-      console.warn('No pins found in database. Initializing with empty source.');
-      map.addSource('user-pins', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [] // Provide an empty features array
-        },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50
-      });
-
-      // Add cluster layers
-      map.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: 'user-pins',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': [
-            'step',
-            ['get', 'point_count'],
-            '#4a7c4a', // forest-500
-            10,
-            '#d97706', // sunset-500
-            30,
-            '#b45309'  // sunset-600
-          ],
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            20,
-            10,
-            30,
-            30,
-            40
-          ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#f8f6f3'
-        }
-      });
-
-      map.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: 'user-pins',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-          'text-size': 14
-        },
-        paint: {
-          'text-color': '#f8f6f3'
-        }
-      });
-
-      // Add individual pin layers
-      map.addLayer({
-        id: 'open-camps',
-        type: 'symbol',
-        source: 'user-pins',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']],
-        layout: {
-          'icon-image': 'campfire-icon',
-          'icon-size': 1.5,
-          'icon-allow-overlap': true,
-          'text-field': ['get', 'title'],
-          'text-offset': [0, 1.5],
-          'text-size': 12
-        },
-        paint: {
-          'text-color': '#2d5016',
-          'text-halo-color': '#fff',
-          'text-halo-width': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'gatherings',
-        type: 'symbol',
-        source: 'user-pins',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']],
-        layout: {
-          'icon-image': 'gathering-icon',
-          'icon-size': 1.5,
-          'icon-allow-overlap': true,
-          'text-field': ['get', 'title'],
-          'text-offset': [0, 1.5],
-          'text-size': 12
-        },
-        paint: {
-          'text-color': '#6b2d5c',
-          'text-halo-color': '#fff',
-          'text-halo-width': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'quiet-places',
-        type: 'symbol',
-        source: 'user-pins',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']],
-        layout: {
-          'icon-image': 'quiet-icon',
-          'icon-size': 1.5,
-          'icon-allow-overlap': true,
-          'text-field': ['get', 'title'],
-          'text-offset': [0, 1.5],
-          'text-size': 12
-        },
-        paint: {
-          'text-color': '#4a5568',
-          'text-halo-color': '#fff',
-          'text-halo-width': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'resources',
-        type: 'symbol',
-        source: 'user-pins',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']],
-        layout: {
-          'icon-image': 'resource-icon',
-          'icon-size': 1.5,
-          'icon-allow-overlap': true,
-          'text-field': ['get', 'title'],
-          'text-offset': [0, 1.5],
-          'text-size': 12
-        },
-        paint: {
-          'text-color': '#0000FF',
-          'text-halo-color': '#fff',
-          'text-halo-width': 1
-        }
-      });
-      return; // Now it's safe to exit.
+    if (!pins) {
+        console.warn('RPC function returned no pins.');
+        return;
     }
 
-    // Convert to GeoJSON
+    console.log('Pins fetched, transforming to GeoJSON FeatureCollection...');
+    // This is the transformation step from the original plan
     const geojson = {
       type: 'FeatureCollection',
-      features: pins.map(pin => {
-        console.log('Processing pin:', pin);
-        console.log('Pin location type:', typeof pin.location);
-        console.log('Pin location value:', pin.location);
-        
-        // Handle different PostGIS return formats
-        let coordinates;
-        
-        if (typeof pin.location === 'string') {
-          // If it's a string like "POINT(-105 40)", parse it
-          const match = pin.location.match(/POINT\(([^ ]+) ([^ ]+)\)/);
-          if (match) {
-            coordinates = [parseFloat(match[1]), parseFloat(match[2])];
-          }
-        } else if (pin.location && pin.location.coordinates) {
-          // If it's already GeoJSON
-          coordinates = pin.location.coordinates;
-        } else if (pin.location && typeof pin.location === 'object') {
-          // If it's a PostGIS object with x/y or lon/lat
-          coordinates = [
-            pin.location.x || pin.location.lon || pin.location.longitude,
-            pin.location.y || pin.location.lat || pin.location.latitude
-          ];
+      features: pins.map(pin => ({
+        type: 'Feature',
+        geometry: pin.geojson, // Use the geojson geometry object directly from the database
+        properties: {
+          id: pin.id,
+          title: pin.title,
+          type: pin.type,
+          description: pin.description,
+          creator: pin.creator_name,
+          tags: JSON.stringify(pin.tags) // Tags are already a JSON array
         }
-        
-        console.log('Parsed coordinates:', coordinates);
-        
-        if (!coordinates || coordinates.length !== 2) {
-          console.error('Invalid coordinates for pin:', pin);
-          return null;
-        }
-        
-        return {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: coordinates
-          },
-          properties: {
-            id: pin.id,
-            title: pin.title,
-            type: pin.type,
-            description: pin.description,
-            creator: pin.profiles?.first_name || 'Anonymous',
-            tags: JSON.stringify(pin.pin_tags?.map(t => t.tag) || [])
-          }
-        }
-      }
-).filter(Boolean)
+      }))
     };
 
-    console.log('GeoJSON created:', geojson);
-    
-    // Remove existing sources and layers if they exist
-    if (map.getSource('user-pins')) {
-      if (map.getLayer('resources')) map.removeLayer('resources');
-      if (map.getLayer('quiet-places')) map.removeLayer('quiet-places');
-      if (map.getLayer('gatherings')) map.removeLayer('gatherings');
-      if (map.getLayer('open-camps')) map.removeLayer('open-camps');
-      if (map.getLayer('cluster-count')) map.removeLayer('cluster-count');
-      if (map.getLayer('clusters')) map.removeLayer('clusters');
-      map.removeSource('user-pins');
-    }
+    console.log('GeoJSON created, adding to map:', geojson);
 
-    // Add source
+    // This adds the data and layers back to the map safely
     map.addSource('user-pins', { 
       type: 'geojson', 
       data: geojson, 
@@ -303,206 +119,15 @@ export function UserPinLayer() {
       clusterRadius: 50 
     });
     
-    console.log('Source added to map');
+    // Re-add all layers
+    map.addLayer({ id: 'clusters', type: 'circle', source: 'user-pins', filter: ['has', 'point_count'], paint: { 'circle-color': '#4a7c4a', 'circle-radius': 20 } });
+    map.addLayer({ id: 'cluster-count', type: 'symbol', source: 'user-pins', filter: ['has', 'point_count'], layout: { 'text-field': '{point_count_abbreviated}', 'text-size': 12 }, paint: { 'text-color': 'white' } });
+    map.addLayer({ id: 'open-camps', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', 'type', 'open_camp']], layout: { 'icon-image': 'campfire-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+    map.addLayer({ id: 'gatherings', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', 'type', 'gathering']], layout: { 'icon-image': 'gathering-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+    map.addLayer({ id: 'quiet-places', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', 'type', 'quiet_place']], layout: { 'icon-image': 'quiet-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
+    map.addLayer({ id: 'resources', type: 'symbol', source: 'user-pins', filter: ['all', ['!', ['has', 'point_count']], ['==', 'type', 'resource']], layout: { 'icon-image': 'resource-icon', 'icon-size': 1.5, 'icon-allow-overlap': true } });
 
-    // Add cluster layers
-    map.addLayer({ 
-      id: 'clusters', 
-      type: 'circle', 
-      source: 'user-pins', 
-      filter: ['has', 'point_count'], 
-      paint: { 
-        'circle-color': [
-          'step',
-          ['get', 'point_count'],
-          '#4a7c4a', // forest-500
-          10,
-          '#d97706', // sunset-500
-          30,
-          '#b45309'  // sunset-600
-        ],
-        'circle-radius': [
-          'step',
-          ['get', 'point_count'],
-          20,
-          10,
-          30,
-          30,
-          40
-        ],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#f8f6f3'
-      } 
-    });
-
-    map.addLayer({ 
-      id: 'cluster-count', 
-      type: 'symbol', 
-      source: 'user-pins', 
-      filter: ['has', 'point_count'], 
-      layout: { 
-        'text-field': '{point_count_abbreviated}', 
-        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 
-        'text-size': 14
-      },
-      paint: {
-        'text-color': '#f8f6f3'
-      }
-    });
-
-    // Add individual pin layers
-    map.addLayer({ 
-      id: 'open-camps', 
-      type: 'symbol', 
-      source: 'user-pins', 
-      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'open_camp']], 
-      layout: { 
-        'icon-image': 'campfire-icon', 
-        'icon-size': 1.5, 
-        'icon-allow-overlap': true, 
-        'text-field': ['get', 'title'], 
-        'text-offset': [0, 1.5], 
-        'text-size': 12 
-      }, 
-      paint: { 
-        'text-color': '#2d5016', 
-        'text-halo-color': '#fff', 
-        'text-halo-width': 1 
-      } 
-    });
-
-    map.addLayer({ 
-      id: 'gatherings', 
-      type: 'symbol', 
-      source: 'user-pins', 
-      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'gathering']], 
-      layout: { 
-        'icon-image': 'gathering-icon', 
-        'icon-size': 1.5, 
-        'icon-allow-overlap': true, 
-        'text-field': ['get', 'title'], 
-        'text-offset': [0, 1.5], 
-        'text-size': 12 
-      }, 
-      paint: { 
-        'text-color': '#6b2d5c', 
-        'text-halo-color': '#fff', 
-        'text-halo-width': 1 
-      } 
-    });
-
-    map.addLayer({ 
-      id: 'quiet-places', 
-      type: 'symbol', 
-      source: 'user-pins', 
-      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'quiet_place']], 
-      layout: { 
-        'icon-image': 'quiet-icon', 
-        'icon-size': 1.5, 
-        'icon-allow-overlap': true, 
-        'text-field': ['get', 'title'], 
-        'text-offset': [0, 1.5], 
-        'text-size': 12 
-      }, 
-      paint: { 
-        'text-color': '#4a5568', 
-        'text-halo-color': '#fff', 
-        'text-halo-width': 1 
-      } 
-    });
-
-    map.addLayer({ 
-      id: 'resources', 
-      type: 'symbol', 
-      source: 'user-pins', 
-      filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'type'], 'resource']], 
-      layout: { 
-        'icon-image': 'resource-icon', 
-        'icon-size': 1.5, 
-        'icon-allow-overlap': true, 
-        'text-field': ['get', 'title'], 
-        'text-offset': [0, 1.5], 
-        'text-size': 12 
-      }, 
-      paint: { 
-        'text-color': '#0000FF', 
-        'text-halo-color': '#fff', 
-        'text-halo-width': 1 
-      } 
-    });
-    
-    console.log('All layers added to map');
-
-    // Click handlers
-    map.on('click', 'open-camps', (e) => {
-      e.preventDefault();
-      handlePinClick(e, map);
-    });
-    map.on('click', 'gatherings', (e) => {
-      e.preventDefault();
-      handlePinClick(e, map);
-    });
-    map.on('click', 'quiet-places', (e) => {
-      e.preventDefault();
-      handlePinClick(e, map);
-    });
-    map.on('click', 'resources', (e) => {
-      e.preventDefault();
-      handlePinClick(e, map);
-    });
-
-    // Hover effects
-    map.on('mouseenter', 'open-camps', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'open-camps', () => {
-      map.getCanvas().style.cursor = '';
-    });
-    map.on('mouseenter', 'gatherings', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'gatherings', () => {
-      map.getCanvas().style.cursor = '';
-    });
-    map.on('mouseenter', 'quiet-places', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'quiet-places', () => {
-      map.getCanvas().style.cursor = '';
-    });
-    map.on('mouseenter', 'resources', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'resources', () => {
-      map.getCanvas().style.cursor = '';
-    });
-    map.on('mouseenter', 'clusters', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'clusters', () => {
-      map.getCanvas().style.cursor = '';
-    });
-
-    // Cluster click to zoom
-    map.on('click', 'clusters', (e) => {
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ['clusters']
-      });
-      
-      const clusterId = features[0].properties.cluster_id;
-      const source = map.getSource('user-pins');
-      
-      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return;
-        
-        map.easeTo({
-          center: features[0].geometry.coordinates,
-          zoom: zoom + 0.5
-        });
-      });
-    });
-    
-    console.log('Pin loading complete!');
+    console.log('Map updated with new pins.');
   }, [map]);
 
   const onMapLoad = useCallback(() => {
