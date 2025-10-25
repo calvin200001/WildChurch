@@ -14,6 +14,7 @@ import { supabase } from './lib/supabase';
 import { Header } from './components/Header';
 import { MapEmptyState } from './components/MapEmptyState';
 import { MapControls } from './components/Map/MapControls';
+import { UserSearch } from './components/UserSearch'; // New import
 
 const baseUrl = 'https://wildchurch.netlify.app'; // Base URL for canonical links - Moved to global scope
 
@@ -172,6 +173,26 @@ function App() {
               canonicalUrl={`${baseUrl}/proposals`}
             />
             <GatheringsBoard user={user} /> {/* Pass user prop to GatheringsBoard */}
+          </>
+        } />
+        <Route path="/users" element={ // New route for user search
+          <>
+            <Seo
+              title="WildChurch - Find Users"
+              description="Search for other users by interests, beliefs, and location."
+              name="WildChurch"
+              type="website"
+              canonicalUrl={`${baseUrl}/users`}
+            />
+            <Header
+              user={user}
+              onLogout={handleLogout}
+              onShowAuth={() => setShowAuthModal(true)}
+              onShowUserProfile={() => setShowUserProfileModal(true)}
+            />
+            <div className="pt-16"> {/* Offset for fixed header */}
+              <UserSearch />
+            </div>
           </>
         } />
       </Routes>

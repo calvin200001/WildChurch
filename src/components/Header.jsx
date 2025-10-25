@@ -32,6 +32,12 @@ export function Header({ user, onLogout, onShowAuth, onShowUserProfile }) {
             >
               Proposals
             </Link>
+            <Link 
+              to="/users" 
+              className="text-earth-200 hover:text-forest-500 transition-colors font-medium"
+            >
+              Find Users
+            </Link>
             
             {user ? (
               <div className="flex items-center space-x-4">
@@ -89,6 +95,13 @@ export function Header({ user, onLogout, onShowAuth, onShowUserProfile }) {
                 className="text-earth-200 hover:text-forest-500 transition-colors py-2"
               >
                 Proposals
+              </Link>
+              <Link 
+                to="/users" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-earth-200 hover:text-forest-500 transition-colors py-2"
+              >
+                Find Users
               </Link>
               
               {user ? (
