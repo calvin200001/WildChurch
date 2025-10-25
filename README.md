@@ -164,86 +164,44 @@ These **must** be set in your Netlify site settings under **Site configuration >
 
 ---
 
-## 🚧 Next Steps: Authentication Implementation (Notes for the Dev)
+## ✅ Implemented Fixes & Improvements
 
-**Goal**: Implement user authentication using Supabase (email/password) to enable user interaction and protect actions.
+This section summarizes the recent development efforts to address critical issues and enhance the application's stability and user experience.
 
-### Priority 1: Add Authentication 🔐
-
-**Instructions for the Dev:**
-
-"We need to add user authentication so people can sign up, log in, and interact with the app. Please implement:
-
-1.  **Supabase Auth Setup**
-    *   Use Supabase's built-in authentication (email/password for now).
-    *   Add a login/signup modal or page.
-    *   Store user session in the app.
-
-2.  **UI Components Needed:**
-    *   **Navigation bar**:
-        *   "Sign Up" / "Log In" buttons (when logged out).
-        *   User profile icon + "Log Out" button (when logged in).
-        *   Link to "View Proposals" (already exists in `App.jsx` but needs to be integrated into the new nav).
-    *   **Auth Modal/Page**:
-        *   Sign up form (email, password, first name).
-        *   Log in form (email, password).
-        *   Switch between sign up/log in.
-
-3.  **Protect Actions:**
-    *   Currently, the RLS policies in the database protect actions like dropping pins, committing to proposals, and creating proposals.
-    *   The frontend code already includes checks like `if (!user) { alert('You must be logged in...'); return; }`.
-    *   Your task is to provide the actual login mechanism so `user` is populated.
-
-4.  **Quick Implementation:**
-    *   Create `src/components/Auth/AuthModal.jsx` (or `AuthPage.jsx`).
-    *   Use Supabase's `signUp()` and `signIn()` methods (available via `supabase` client from `src/lib/supabase.js`).
-    *   Add to `App.jsx` navigation.
-
-5.  **Test Flow:**
-    1.  User visits site → sees "Sign Up" button.
-    2.  Clicks "Sign Up" → modal opens.
-    3.  Enters email/password/name → account created.
-    4.  Now logged in → can drop pins, commit to proposals.
-    5.  Can log out and log back in.
-
-### **Additional Notes for the Dev (Things to Look Out For):**
-
-*   **Supabase Client**: The `supabase` client is already initialized in `src/lib/supabase.js`. You can import and use it directly.
-*   **Session Management**: Use `supabase.auth.onAuthStateChange((event, session) => { ... })` to listen for authentication state changes and manage the user session within your React app (e.g., using React Context or Zustand for global state). This is crucial for updating the UI (nav bar, protected actions).
-*   **User Profile Creation**: When a user signs up, you'll need to create a corresponding entry in the `profiles` table. Supabase has a feature called "Auth Hooks" or "Database Triggers" that can automatically create a `profiles` entry when a new user signs up via `auth.users`. This is the recommended approach.
-    *   **Example Trigger (SQL):**
-        ```sql
-        -- In your Supabase SQL Editor
-        CREATE FUNCTION public.handle_new_user()
-        RETURNS TRIGGER AS $$
-        BEGIN
-          INSERT INTO public.profiles (id, first_name)
-          VALUES (NEW.id, NEW.raw_user_meta_data->>'first_name');
-          RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-        CREATE TRIGGER on_auth_user_created
-          AFTER INSERT ON auth.users
-          FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-        ```
-        (You'll need to ensure `first_name` is passed in `signUp`'s `data` object).
-*   **Protected Routes**: While the current actions are protected by RLS, you might want to implement client-side protected routes using `react-router-dom` (e.g., a `/profile` page only accessible when logged in).
-*   **Roles**: The `profiles` table now has a `role` column (`user`, `moderator`, `admin`). For now, new users should default to `'user'`. This will be important for future moderation features.
-*   **Push Notifications**: Remember that `VITE_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are needed for push notifications. The `push_subscriptions` table is ready.
-*   **Privacy Settings**: The `profiles` table has `messaging_policy` and `location_sharing` for future privacy controls.
-*   **Error Handling**: Implement robust error handling for all Supabase API calls (e.g., `try...catch` blocks).
-*   **Loading States**: Show loading indicators during auth operations.
+*   **RPC Function for Pins (`get_pins_json`):** Provided SQL to create the `get_locations_geojson()` RPC function (later renamed to `get_pins_json`) in Supabase, essential for map pin data retrieval.
+*   **User Profile Modal Loading:** Modified `UserProfileModal.jsx` to use `.maybeSingle()` for graceful profile loading, preventing the modal from hanging when a profile doesn't exist.
+*   **Profile Loading Race Conditions:** Refactored profile fetching logic in `App.jsx` to consolidate calls, prevent race conditions, and ensure consistent loading states. This also included implementing auto-creation of profiles for new users.
+*   **Header Component Profile Prop Handling:** Updated `App.jsx` and `Header.jsx` to consistently pass and handle `profile` and `profileLoading` props, ensuring correct display of user information and loading states in the header.
+*   **Messaging System Stability:** Rewrote `fetchConversations` logic and `useEffect` dependencies in `ConversationList.jsx` to improve messaging stability and correct data fetching for conversation lists.
+*   **UserSearch Component Import Fix:** Added the missing `User` icon import to `UserSearch.jsx`.
+*   **Conversation View Avatar Display:** Modified message display to correctly show sender avatars and updated `fetchMessages` to include sender profile data in `ConversationView.jsx`.
+*   **Global Loading States:** Created a reusable `ProfileLoading.jsx` component and integrated it into `ConversationList.jsx` to provide better visual feedback during data fetching.
+*   **Robust Error Handling:** Created an `ErrorBoundary.jsx` component and wrapped the main `Routes` in `App.jsx` to provide a more robust error handling mechanism.
+*   **Database Trigger for Auto-Profile Creation:** Provided SQL to create the `handle_new_user()` trigger in Supabase, automating profile creation for new users.
+*   **Supabase Client Bypasses (Direct Fetch Implementations):** Due to persistent hanging issues with the `@supabase/supabase-js` client library, several key data fetching and storage operations have been transitioned to direct `fetch` API calls:
+    *   `supabase.rpc('get_pins_json')` in `UserPinLayer.jsx` was replaced with a direct `fetch` call.
+    *   `supabase.from('locations').select(...).single()` in `PinDetailsModal.jsx` was replaced with a direct `fetch` call.
+    *   `supabase.from('profiles').select(...).maybeSingle()` in `UserProfileModal.jsx` was replaced with a direct `fetch` call.
+    *   `supabase.storage.from('avatars').upload(...)` in `UserProfileModal.jsx` was replaced with a direct `fetch` call.
+    *   `supabase.from('conversation_participants').select(...)` in `ConversationList.jsx` was replaced with a direct `fetch` call.
 
 ---
 
-## 🐛 Known Issues / TODOs
+## 🚧 Remaining Issues & Future Enhancements
 
-*   **`viewPinDetails`**: Currently just an `alert()`. Needs a proper modal or page to display full pin details.
-*   **User Profile Editing**: No UI for users to edit their `profiles` data yet.
-*   **Image Uploads**: No functionality for image uploads (e.g., for `avatar_url` or pin photos).
-*   **Gatherings Board Comments**: While the comments functionality is there, displaying user avatars and full profile details for comments is not yet implemented.
-*   **WebGL Context Loss**: While handling is implemented, frequent context loss might indicate underlying browser/hardware issues.
+This section outlines known issues, areas for further investigation, and potential future enhancements.
+
+*   **Supabase Client Library Investigation**: The recurring need to bypass the `@supabase/supabase-js` client library with direct `fetch` calls for various operations (RPC, `select`, storage) indicates a deeper underlying incompatibility or bug with the client library in this specific environment/setup. A thorough investigation into the root cause of these hanging issues is recommended.
+*   **Remaining Supabase Client Usage Review**: All remaining uses of the `@supabase/supabase-js` client library should be reviewed. Specifically, the following functions still use the client and may require conversion to direct `fetch` calls if they exhibit similar hanging/failure behavior:
+    *   `downloadImage` function in `UserProfileModal.jsx` (uses `supabase.storage.from('avatars').download(path)`).
+    *   `updateProfile` function in `UserProfileModal.jsx` (uses `supabase.from('profiles').upsert(updates)`).
+    *   `handleSendMessage` function in `ConversationView.jsx` (uses `supabase.from('messages').insert(...)`).
+    *   `UserSearch` component's RPC calls (`supabase.rpc('search_profiles', ...)` and `supabase.rpc('create_or_get_conversation', ...)`).
+    *   Image downloading in `Header.jsx`, `ConversationList.jsx`, and `ConversationView.jsx` (if they use `supabase.storage.from('avatars').getPublicUrl(...)` for actual download, not just URL generation).
+*   **`viewPinDetails`**: Currently just an `alert()`. Needs a proper modal or page to display full pin details (though `PinDetailsModal` has been implemented, this might refer to further enhancements).
+*   **Image Uploads**: While avatar upload is now functional via direct fetch, general image uploads (e.g., for pin photos) still need to be implemented.
+*   **Gatherings Board Comments**: While the comments functionality is there, displaying user avatars and full profile details for comments is not yet fully implemented.
+*   **WebGL Context Loss**: While handling is implemented, frequent context loss might indicate underlying browser/hardware issues that warrant further investigation.
 *   **PWA Install Prompt**: Ensure the PWA install prompt appears correctly on supported devices.
 
 ---
