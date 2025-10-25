@@ -26,13 +26,25 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   
   try {
     console.log('UserProfileModal: Executing Supabase query...');
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('username, avatar_url, interests, beliefs, state')
-      .eq('id', user.id)
-      .maybeSingle(); // ← CHANGED: Use maybeSingle() instead of single()
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=username,avatar_url,interests,beliefs,state`,
+      {
+        method: 'GET',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const data = await response.json();
+    const error = response.ok ? null : { message: 'Failed to fetch profile' };
     
-    console.log('UserProfileModal: Query completed. Data:', data, 'Error:', error);
+    // maybeSingle() behavior: if no data, it returns an empty array, not null
+    const profileData = data && data.length > 0 ? data[0] : null;
+
+    console.log('UserProfileModal: Query completed. Data:', profileData, 'Error:', error);
 
     if (error) {
       // Real error occurred
