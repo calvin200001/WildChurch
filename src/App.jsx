@@ -79,9 +79,11 @@ function AppContent({ user, setUser, profile, profileLoading, getProfile, handle
       />
       <Header 
         user={user}
+        profile={profile}
+        profileLoading={profileLoading}
         onLogout={handleLogout}
         onShowAuth={() => setShowAuthModal(true)}
-        onShowUserProfile={() => setShowUserProfileModal(true)} // New prop
+        onShowUserProfile={() => setShowUserProfileModal(true)}
       />
       <Map
         mapLib={maplibregl}

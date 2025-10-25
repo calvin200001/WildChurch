@@ -133,8 +133,11 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file)); // Show preview immediately
     console.log('UserProfileModal: Starting avatar upload to path:', filePath);
+    console.log('UserProfileModal: File details - size:', file.size, 'type:', file.type, 'name:', file.name);
+    console.log('UserProfileModal: Upload URL:', `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/avatars/${filePath}`);
 
     try {
+      console.log('UserProfileModal: Initiating fetch request...');
       const uploadResponse = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/avatars/${filePath}`,
         {
@@ -149,8 +152,12 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
           body: file,
         }
       );
+      console.log('UserProfileModal: Fetch completed. Response status:', uploadResponse.status, 'OK:', uploadResponse.ok);
 
+      console.log('UserProfileModal: Parsing JSON response...');
       const uploadData = await uploadResponse.json();
+      console.log('UserProfileModal: JSON parsed successfully:', uploadData);
+      
       const uploadError = uploadResponse.ok ? null : { message: uploadData.message || 'Failed to upload avatar' };
 
       console.log('UserProfileModal: Supabase storage upload completed. Data:', uploadData, 'Error:', uploadError);
