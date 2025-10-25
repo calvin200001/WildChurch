@@ -29,6 +29,7 @@ function AppContent({ user, setUser, profile, getProfile, handleLogout, showAuth
 
   console.log('User:', user); // Debugging: Check user state
   console.log('showDropPinModal:', showDropPinModal); // Debugging: Check modal visibility state
+  console.log('showUserProfileModal:', showUserProfileModal); // Debugging: Check user profile modal visibility state
 
   const handleMapClick = (e) => {
     console.log('Map clicked', e);
