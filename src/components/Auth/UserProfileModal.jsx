@@ -132,8 +132,8 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     const file = event.target.files[0];
     console.log('UserProfileModal: File selected:', file);
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileName = `${user.id}/${Math.random()}.${fileExt}`; // Folder structure
+    const filePath = fileName;
 
     if (file.size > 1024 * 1024) { // 1MB limit
       setFileError('File size should be less than 1MB.');
@@ -149,33 +149,18 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file)); // Show preview immediately
     console.log('UserProfileModal: Starting avatar upload to path:', filePath);
-    console.log('UserProfileModal: File details - size:', file.size, 'type:', file.type, 'name:', file.name);
-    console.log('UserProfileModal: Upload URL:', `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/avatars/${filePath}`);
 
     try {
-      console.log('UserProfileModal: Initiating fetch request...');
-      const uploadResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/avatars/${filePath}`,
-        {
-          method: 'POST',
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': file.type,
-            'x-upsert': 'true',
-          },
-          body: file,
-        }
-      );
-      console.log('UserProfileModal: Fetch completed. Response status:', uploadResponse.status, 'OK:', uploadResponse.ok);
+      // Use Supabase client for proper auth handling
+      console.log('UserProfileModal: Using Supabase client upload...');
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
 
-      console.log('UserProfileModal: Parsing JSON response...');
-      const uploadData = await uploadResponse.json();
-      console.log('UserProfileModal: JSON parsed successfully:', uploadData);
-      
-      const uploadError = uploadResponse.ok ? null : { message: uploadData.message || uploadData.error || 'Failed to upload avatar' };
-
-      console.log('UserProfileModal: Supabase storage upload completed. Data:', uploadData, 'Error:', uploadError);
+      console.log('UserProfileModal: Supabase storage upload completed. Data:', data, 'Error:', uploadError);
 
       if (uploadError) {
         throw uploadError;
@@ -185,7 +170,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
       console.log('UserProfileModal: Avatar uploaded successfully. FilePath:', filePath);
     } catch (err) {
       console.error('Error uploading avatar:', err);
-      setFileError('Error uploading avatar.');
+      setFileError(`Error uploading avatar: ${err.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
@@ -223,15 +208,15 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-earth-800 p-6 rounded-lg shadow-lg max-w-md w-full relative text-white">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-earth-800 p-6 rounded-lg shadow-lg max-w-md w-full relative text-white max-h-[85vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-200 text-2xl"
+          className="sticky top-0 float-right text-gray-400 hover:text-gray-200 text-2xl z-10 -mr-2 -mt-2 bg-earth-800 rounded-full w-8 h-8 flex items-center justify-center"
         >
           &times;
         </button>
-        <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+        <h2 className="text-2xl font-bold mb-4 clear-right">Edit Profile</h2>
 
         {loading && <LoadingSpinner />}
 
@@ -280,17 +265,6 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
                 value={testimony}
                 onChange={(e) => setTestimony(e.target.value)}
                 placeholder="Share your faith journey..."
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
-              <input
-                id="username"
-                type="text"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
 
