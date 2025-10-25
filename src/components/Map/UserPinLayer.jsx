@@ -67,18 +67,22 @@ export function UserPinLayer({ searchQuery = '' }) {
           }
         );
 
-        const pins = await response.json();
-        const error = response.ok ? null : { message: 'Failed to fetch pins' };
+        console.log('UserPinLayer: Response status:', response.status);
+        console.log('UserPinLayer: Response ok:', response.ok);
 
-        console.log('UserPinLayer: RPC RETURNED!');
-        console.log('UserPinLayer: pins type:', typeof pins);
-        console.log('UserPinLayer: pins value:', pins);
-        console.log('UserPinLayer: error:', error);
-
-        if (error) {
-          console.error('UserPinLayer: Error fetching pins via RPC:', error);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('UserPinLayer: Fetch failed!', response.status, errorText);
           return;
         }
+
+        const responseText = await response.text();
+        console.log('UserPinLayer: Raw response:', responseText);
+        
+        const pins = JSON.parse(responseText);
+        console.log('UserPinLayer: Parsed pins:', pins);
+        console.log('UserPinLayer: pins type:', typeof pins);
+        console.log('UserPinLayer: pins.features length:', pins?.features?.length);
 
         if (!pins || !pins.features) {
           console.warn('UserPinLayer: RPC returned no pins or invalid format:', pins);

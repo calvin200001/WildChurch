@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'; // New import
 import { supabase } from '../lib/supabase'; // Adjust path as needed
 import { LoadingSpinner } from './LoadingSpinner'; // Assuming a LoadingSpinner component exists // Assuming a LoadingSpinner component exists
 import { MessageSquare, User } from 'lucide-react'; // New import for message icon
+import { Avatar } from './Avatar';
 
 export function UserSearch({ user }) { // Accept user prop
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,17 +112,7 @@ export function UserSearch({ user }) { // Accept user prop
                 {/* Wrap all content inside <li> with a single div */}
                 <div className="flex items-center w-full"> {/* Use w-full to ensure it takes full width */}
                   <div className="flex items-center space-x-3 flex-grow">
-                    {profile.avatar_url ? (
-                      <img
-                        src={supabase.storage.from('avatars').getPublicUrl(profile.avatar_url).data.publicUrl}
-                        alt="Avatar"
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-gray-400">
-                        <User className="h-5 w-5" />
-                      </div>
-                    )}
+                    <Avatar url={profile.avatar_url} className="w-10 h-10 rounded-full object-cover" />
                     <div>
                       <p className="font-medium">{profile.username || 'Anonymous'}</p>
                       {profile.state && <p className="text-sm text-gray-400">{profile.state}</p>}

@@ -2,8 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase'; // Adjust path as needed
 import { LoadingSpinner } from '../LoadingSpinner'; // Assuming a LoadingSpinner component exists
 
+// View component
+function ViewProfile({ profile, onEdit, onClose, avatarPreview }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">View Profile</h2>
+      {avatarPreview ? (
+        <img src={avatarPreview} alt="Avatar" className="w-20 h-20 rounded-full object-cover mb-4" />
+      ) : profile.avatar_url ? (
+        <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">
+          Loading...
+        </div>
+      ) : (
+        <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">
+          No Image
+        </div>
+      )}
+      <p><strong>Username:</strong> {profile.username}</p>
+      <p><strong>First Name:</strong> {profile.first_name}</p>
+      <p><strong>Bio:</strong> {profile.bio}</p>
+      <p><strong>Testimony:</strong> {profile.testimony}</p>
+      <p><strong>Interests:</strong> {profile.interests?.join(', ')}</p>
+      <p><strong>Beliefs:</strong> {profile.beliefs?.join(', ')}</p>
+      <p><strong>State/Region:</strong> {profile.state}</p>
+      <p><strong>Messaging Policy:</strong> {profile.messaging_policy}</p>
+      <div className="flex justify-end space-x-2 mt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-600 rounded-md text-gray-300 hover:bg-gray-700"
+        >
+          Close
+        </button>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+          Edit
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
 export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [bio, setBio] = useState('');
@@ -26,43 +74,19 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
 
   async function getProfile() {
     setLoading(true);
-    console.log('UserProfileModal: Attempting to fetch profile for user.id:', user.id);
-    
     try {
-      console.log('UserProfileModal: Executing Supabase query...');
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=username,first_name,bio,testimony,avatar_url,interests,beliefs,state,messaging_policy`,
-        {
-          method: 'GET',
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-      const data = await response.json();
-      const error = response.ok ? null : { message: 'Failed to fetch profile' };
-      
-      // maybeSingle() behavior: if no data, it returns an empty array, not null
-      const profileData = data && data.length > 0 ? data[0] : null;
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        throw error;
+      }
 
-      console.log('UserProfileModal: Query completed. Data:', profileData, 'Error:', error);
-
-      if (error) {
-        // Real error occurred
-        console.error('UserProfileModal: Database error:', error);
-        // Still allow user to fill in the form
-        setUsername('');
-        setAvatarUrl('');
-        setInterests('');
-        setBeliefs('');
-        setProfileState('');
-        setAvatarPreview('');
-      } else if (data) {
-        // Profile exists - populate form
-        console.log('UserProfileModal: Profile found:', data);
+      if (data) {
+        setProfile(data);
         setUsername(data.username || '');
         setFirstName(data.first_name || '');
         setBio(data.bio || '');
@@ -75,36 +99,14 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
         if (data.avatar_url) {
           downloadImage(data.avatar_url);
         }
+        setIsEditMode(false);
       } else {
-        // No profile exists yet - show empty form
-        console.log('UserProfileModal: No profile found. User can create one.');
-        setUsername('');
-        setFirstName('');
-        setBio('');
-        setTestimony('');
-        setAvatarUrl('');
-        setInterests('');
-        setBeliefs('');
-        setProfileState('');
-        setMessagingPolicy('anyone');
-        setAvatarPreview('');
+        setIsEditMode(true);
       }
     } catch (err) {
-      console.error('UserProfileModal: Unexpected error:', err);
-      // Still allow form interaction
-      setUsername('');
-      setFirstName('');
-      setBio('');
-      setTestimony('');
-      setAvatarUrl('');
-      setInterests('');
-      setBeliefs('');
-      setProfileState('');
-      setMessagingPolicy('anyone');
-      setAvatarPreview('');
+      console.error('Error fetching profile:', err);
     } finally {
-      setLoading(false); // ALWAYS stop loading
-      console.log('UserProfileModal: Loading finished. Loading state:', false);
+      setLoading(false);
     }
   }
 
@@ -200,7 +202,7 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
       console.error('Error updating profile:', error);
     } else {
       onUpdateProfile(); // Callback to refresh user data in App.jsx if needed
-      onClose();
+      getProfile(); // Refetch profile to show view mode
     }
     setLoading(false);
   }
@@ -216,145 +218,150 @@ export function UserProfileModal({ isOpen, onClose, user, onUpdateProfile }) {
         >
           &times;
         </button>
-        <h2 className="text-2xl font-bold mb-4 clear-right">Edit Profile</h2>
-
+        
         {loading && <LoadingSpinner />}
 
         {!loading && (
-          <form onSubmit={updateProfile}>
-            <div className="mb-4">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
-              <input
-                id="username"
-                type="text"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">First Name</label>
-              <input
-                id="firstName"
-                type="text"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-300">Bio</label>
-              <textarea
-                id="bio"
-                rows="3"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself..."
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="testimony" className="block text-sm font-medium text-gray-300">Testimony (Optional)</label>
-              <textarea
-                id="testimony"
-                rows="3"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={testimony}
-                onChange={(e) => setTestimony(e.target.value)}
-                placeholder="Share your faith journey..."
-              />
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="avatar" className="block text-sm font-medium text-gray-300">Avatar</label>
-              <div className="flex items-center space-x-4 mt-1">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar Preview" className="w-20 h-20 rounded-full object-cover" />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">
-                    No Image
-                  </div>
-                )}
+          isEditMode ? (
+            <form onSubmit={updateProfile}>
+              <h2 className="text-2xl font-bold mb-4 clear-right">Edit Profile</h2>
+              {/* Form fields... */}
+              <div className="mb-4">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
                 <input
-                  type="file"
-                  id="avatar"
-                  accept="image/*"
-                  onChange={uploadAvatar}
-                  disabled={uploading}
-                  className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600"
+                  id="username"
+                  type="text"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
-              {fileError && <p className="text-red-400 text-sm mt-1">{fileError}</p>}
-              {uploading && <p className="text-indigo-300 text-sm mt-1">Uploading...</p>}
-            </div>
 
-            <div className="mb-4">
-              <label htmlFor="interests" className="block text-sm font-medium text-gray-300">Interests (comma-separated)</label>
-              <input
-                id="interests"
-                type="text"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={interests}
-                onChange={(e) => setInterests(e.target.value)}
-              />
-            </div>
+              <div className="mb-4">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">First Name</label>
+                <input
+                  id="firstName"
+                  type="text"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
 
-            <div className="mb-4">
-              <label htmlFor="beliefs" className="block text-sm font-medium text-gray-300">Beliefs (comma-separated)</label>
-              <input
-                id="beliefs"
-                type="text"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={beliefs}
-                onChange={(e) => setBeliefs(e.target.value)}
-              />
-            </div>
+              <div className="mb-4">
+                <label htmlFor="bio" className="block text-sm font-medium text-gray-300">Bio</label>
+                <textarea
+                  id="bio"
+                  rows="3"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
 
-            <div className="mb-4">
-              <label htmlFor="state" className="block text-sm font-medium text-gray-300">State/Region</label>
-              <input
-                id="state"
-                type="text"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={profileState}
-                onChange={(e) => setProfileState(e.target.value)}
-              />
-            </div>
+              <div className="mb-4">
+                <label htmlFor="testimony" className="block text-sm font-medium text-gray-300">Testimony (Optional)</label>
+                <textarea
+                  id="testimony"
+                  rows="3"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={testimony}
+                  onChange={(e) => setTestimony(e.target.value)}
+                  placeholder="Share your faith journey..."
+                />
+              </div>
 
-            <div className="mb-4">
-              <label htmlFor="messagingPolicy" className="block text-sm font-medium text-gray-300">Who Can Message You</label>
-              <select
-                id="messagingPolicy"
-                className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                value={messagingPolicy}
-                onChange={(e) => setMessagingPolicy(e.target.value)}
-              >
-                <option value="anyone">Anyone</option>
-                <option value="following">People I Follow</option>
-                <option value="verified">Verified Users Only</option>
-              </select>
-            </div>
+              <div className="mb-4">
+                <label htmlFor="avatar" className="block text-sm font-medium text-gray-300">Avatar</label>
+                <div className="flex items-center space-x-4 mt-1">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar Preview" className="w-20 h-20 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    id="avatar"
+                    accept="image/*"
+                    onChange={uploadAvatar}
+                    disabled={uploading}
+                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600"
+                  />
+                </div>
+                {fileError && <p className="text-red-400 text-sm mt-1">{fileError}</p>}
+                {uploading && <p className="text-indigo-300 text-sm mt-1">Uploading...</p>}
+              </div>
 
-            <div className="flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-600 rounded-md text-gray-300 hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                disabled={loading || uploading}
-              >
-                {loading ? 'Saving...' : 'Save Profile'}
-              </button>
-            </div>
-          </form>
+              <div className="mb-4">
+                <label htmlFor="interests" className="block text-sm font-medium text-gray-300">Interests (comma-separated)</label>
+                <input
+                  id="interests"
+                  type="text"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={interests}
+                  onChange={(e) => setInterests(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="beliefs" className="block text-sm font-medium text-gray-300">Beliefs (comma-separated)</label>
+                <input
+                  id="beliefs"
+                  type="text"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={beliefs}
+                  onChange={(e) => setBeliefs(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="state" className="block text-sm font-medium text-gray-300">State/Region</label>
+                <input
+                  id="state"
+                  type="text"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={profileState}
+                  onChange={(e) => setProfileState(e.target.value)}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="messagingPolicy" className="block text-sm font-medium text-gray-300">Who Can Message You</label>
+                <select
+                  id="messagingPolicy"
+                  className="mt-1 block w-full rounded-md bg-earth-700 border-gray-600 text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  value={messagingPolicy}
+                  onChange={(e) => setMessagingPolicy(e.target.value)}
+                >
+                  <option value="anyone">Anyone</option>
+                  <option value="following">People I Follow</option>
+                  <option value="verified">Verified Users Only</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => profile ? setIsEditMode(false) : onClose()}
+                  className="px-4 py-2 border border-gray-600 rounded-md text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  disabled={loading || uploading}
+                >
+                  {loading ? 'Saving...' : 'Save Profile'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            profile && <ViewProfile profile={profile} onEdit={() => setIsEditMode(true)} onClose={onClose} avatarPreview={avatarPreview} />
+          )
         )}
       </div>
     </div>
